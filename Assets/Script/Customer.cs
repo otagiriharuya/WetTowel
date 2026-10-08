@@ -20,16 +20,18 @@ public class Customer : MonoBehaviour
     [SerializeField] private float greatThreshold = 15f; // ±15以内
     [SerializeField] private float goodThreshold = 30f; // ±30以内
 
-    [SerializeField] private Image patienceBarImage; // ゲージ表示用のUI Image (Filledタイプ)
+    [SerializeField] private Image patienceBarImage; // ゲージ表示用のUI
 
     [SerializeField] private bool showDebugLog = true; // デバッグログの表示切り替え
 
     private float _currentPatienceTime; // 現在の残り我慢時間
     private bool _isServed = false; // すでに提供済みか
+    private bool _isMoving = false; // 移動中フラグ
 
     public float TargetTemperature => targetTemperature;
     public float PatienceRatio => Mathf.Clamp01(_currentPatienceTime / maxPatienceTime); // 我慢ゲージ割合 (0.0〜1.0)
     public bool IsServed => _isServed;
+    public bool IsMoving => _isMoving;
 
     private void Awake()
     {
@@ -39,7 +41,9 @@ public class Customer : MonoBehaviour
 
     private void Update()
     {
-        if (_isServed) return;
+        // 提出済み、移動中は我慢ゲージを減らさない
+        if (_isServed || _isMoving)
+            return;
 
         // 時間経過で我慢ゲージを減算
         _currentPatienceTime -= Time.deltaTime;
@@ -50,6 +54,12 @@ public class Customer : MonoBehaviour
         {
             OnPatienceTimeout();
         }
+    }
+
+    // 移動状態の切り替え
+    public void SetMovingState(bool isMoving)
+    {
+        _isMoving = isMoving;
     }
 
     // 我慢ゲージUIの表示更新
@@ -81,10 +91,6 @@ public class Customer : MonoBehaviour
 
         UpdatePatienceUI();
 
-        // 登場アニメーション（DOTween）
-        transform.localScale = Vector3.zero;
-        transform.DOScale(Vector3.one, 0.3f).SetEase(Ease.OutBack);
-
         if (showDebugLog)
             Debug.Log($"<color=cyan>【客登場】</color> 要求温度: {targetTemperature:F1} ℃ | 我慢時間: {maxPatienceTime} 秒");
     }
@@ -92,8 +98,28 @@ public class Customer : MonoBehaviour
     // おしぼりを受け取った時の判定・処理
     public void ServeWetTowel(WetTowel wetTowel)
     {
-        if (_isServed) return;
+        // 提出済み、移動中は受取らない
+        if (_isServed || _isMoving)
+            return;
+
         _isServed = true;
+
+        // おしぼりの消滅演出
+        if (wetTowel != null)
+        {
+            wetTowel.transform.DOKill();
+            // 客の位置へ移動しながら縮小
+            Sequence towelSeq = DOTween.Sequence();
+            towelSeq.Append(wetTowel.transform.DOMove(transform.position, 0.15f).SetEase(Ease.OutQuad))
+                    .Join(wetTowel.transform.DOScale(Vector3.zero, 0.15f).SetEase(Ease.InBack))
+                    .OnComplete(() =>
+                    {
+                        if (wetTowel != null)
+                        {
+                            Destroy(wetTowel.gameObject); // ここでおしぼりを削除
+                        }
+                    });
+        }
 
         // 失敗作チェック（焦げ・カチコチ）
         if (wetTowel.CurrentState != WetTowelState.Normal)
@@ -144,7 +170,7 @@ public class Customer : MonoBehaviour
         PlayExitAnimation(eval != CustomerEvaluation.Miss);
     }
 
-    // 評価結果の処理（ログ出力およびGameManagerへの加算通知準備）
+    // 評価結果の処理
     private void ProcessEvaluation(CustomerEvaluation eval, int baseScore, int finalScore, float timeChange)
     {
         if (showDebugLog)
@@ -152,20 +178,19 @@ public class Customer : MonoBehaviour
             string color = eval == CustomerEvaluation.Perfect ? "yellow" : (eval == CustomerEvaluation.Miss ? "red" : "green");
             Debug.Log($"<color={color}>【提供評価】</color> 判定: {eval} | 基礎点: {baseScore} pt | 倍率補正後: {finalScore} pt | 時間変化: {timeChange:F1} 秒 | 我慢残量: {PatienceRatio * 100:F0}%");
         }
-
-        // ※後ほど作成する GameManager.Instance.AddScore(finalScore); などを呼び出します
     }
 
-    // 我慢限界（タイムアウト怒り退場）
+    // タイムアウト怒り退場
     private void OnPatienceTimeout()
     {
-        if (_isServed) return;
+        if (_isServed)
+            return;
+
         _isServed = true;
 
         if (showDebugLog)
             Debug.LogWarning($"<color=red>【怒り退場】</color> 客の我慢限界！ スコア: -500 pt | 時間: -5.0 秒");
 
-        // ※ GameManager にペナルティ通知（スコア -500 / 時間 -5.0秒）
 
         PlayExitAnimation(false);
     }

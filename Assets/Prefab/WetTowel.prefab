@@ -142,7 +142,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 31c5b089125293845a97f3fdf6a19499, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DraggableItem
-  returnDuration: 5
+  returnDuration: 0.25
   dropDetectRadius: 0.5
   showDebugLog: 1
 --- !u!114 &34277315336762726

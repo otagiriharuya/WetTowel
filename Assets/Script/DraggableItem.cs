@@ -1,6 +1,7 @@
+using DG.Tweening;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using DG.Tweening;
 
 public class DraggableItem : MonoBehaviour, IPointerDownHandler, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
@@ -76,36 +77,94 @@ public class DraggableItem : MonoBehaviour, IPointerDownHandler, IBeginDragHandl
 
         // 離した位置の周辺にある DropTarget を検索（自身のColliderは除外）
         Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, dropDetectRadius);
-        DropTarget target = null;
+        DropTarget selectedTarget = null;
+        WetTowel myWetTowel = GetComponent<WetTowel>();
 
+        // 検知された DropTarget リストを抽出
+        List<DropTarget> validTargets = new List<DropTarget>();
         foreach (var hit in hits)
         {
             if (hit.gameObject != gameObject)
             {
-                target = hit.GetComponent<DropTarget>();
+                DropTarget target = hit.GetComponent<DropTarget>();
                 if (target != null)
-                    break;
+                {
+                    validTargets.Add(target);
+                }
+            }
+        }
+
+        // 検知対象がある場合の優先度判定ロジック
+        if (validTargets.Count > 0)
+        {
+            // 客が複数重なっているかチェック
+            List<Customer> candidateCustomers = new List<Customer>();
+            foreach (var target in validTargets)
+            {
+                Customer customer = target.GetComponent<Customer>();
+                // 移動中・提供済みでない有効な客のみを対象とする
+                if (customer != null && !customer.IsMoving && !customer.IsServed)
+                {
+                    candidateCustomers.Add(customer);
+                }
+            }
+
+            // 客が1名以上候補にいる場合：温度誤差が一番少ない客を最優先で選択
+            if (candidateCustomers.Count > 0 && myWetTowel != null)
+            {
+                Customer bestCustomer = null;
+                float minTempDiff = float.MaxValue;
+
+                foreach (var customer in candidateCustomers)
+                {
+                    float diff = Mathf.Abs(customer.TargetTemperature - myWetTowel.CurrentTemperature);
+                    if (diff < minTempDiff)
+                    {
+                        minTempDiff = diff;
+                        bestCustomer = customer;
+                    }
+                }
+
+                if (bestCustomer != null)
+                {
+                    selectedTarget = bestCustomer.GetComponent<DropTarget>();
+                    if (showDebugLog && candidateCustomers.Count > 1)
+                    {
+                        Debug.Log($"<color=cyan>【賢い提供判定】</color> 重なった {candidateCustomers.Count} 名の中から最も適した客 (要求:{bestCustomer.TargetTemperature:F1}℃ / 誤差:{minTempDiff:F1}℃) を自動選択しました。");
+                    }
+                }
+            }
+
+            // 客以外のターゲット（機械枠やゴミ箱）または客が選ばれなかった場合：距離が一番近いものを採用
+            if (selectedTarget == null)
+            {
+                float minDistance = float.MaxValue;
+                foreach (var target in validTargets)
+                {
+                    float dist = Vector3.Distance(transform.position, target.transform.position);
+                    if (dist < minDistance)
+                    {
+                        minDistance = dist;
+                        selectedTarget = target;
+                    }
+                }
             }
         }
 
         bool success = false;
-        if (target != null)
+        if (selectedTarget != null && myWetTowel != null)
         {
-            WetTowel item = GetComponent<WetTowel>();
-            if (item != null)
-            {
-                success = target.TryAcceptWetTowel(item); // ターゲットへのドロップを試みる
-                // ドロップに成功した場合、新しい枠の参照を保持する（ゴミ箱や客以外）
-                if (success)
-                {
-                    _currentMountedTarget = target;
-                    _isSpawnedFromStock = false; // ドロップ成功でフラグ解除
-                }
+            success = selectedTarget.TryAcceptWetTowel(myWetTowel); // ターゲットへのドロップを試みる
 
+            // ドロップに成功した場合、新しい枠の参照を保持する（ゴミ箱や客以外）
+            if (success)
+            {
+                _currentMountedTarget = selectedTarget;
+                _isSpawnedFromStock = false; // ドロップ成功でフラグ解除
             }
         }
 
-        // ドロップ失敗（何もない場所で離した / 枠が埋まっていた）場合の復帰・破棄処理
+        // ドロップ失敗（何もない場所で離した / 枠が埋まっていた / 提供不可）場合の復帰・破棄処理
         if (!success)
         {
             HandleDropFailure();

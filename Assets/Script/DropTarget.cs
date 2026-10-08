@@ -67,12 +67,20 @@ public class DropTarget : MonoBehaviour
                 return true;
 
             case TargetType.Customer:
-                if (showDebugLog)
-                    Debug.Log($"<color=green>【提供】</color> {wetTowel.gameObject.name} (温度:{wetTowel.CurrentTemperature:F1}) を客へ渡しました。");
-
                 Customer customer = GetComponent<Customer>();
                 if (customer != null)
                 {
+                    // 移動中またはサービス済みの客には提供不可にする
+                    if (customer.IsMoving || customer.IsServed)
+                    {
+                        if (showDebugLog)
+                            Debug.Log($"<color=gray>[提供不可]</color> {gameObject.name} は移動中または接客済みです。");
+                        return false;
+                    }
+
+                    if (showDebugLog)
+                        Debug.Log($"<color=green>【提供】</color> {wetTowel.gameObject.name} (温度:{wetTowel.CurrentTemperature:F1}) を客へ渡しました。");
+
                     customer.ServeWetTowel(wetTowel); // 客側で評価・スコア計算・消滅演出を実行
                 }
                 else
