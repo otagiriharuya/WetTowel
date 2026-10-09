@@ -21,6 +21,12 @@ public class Customer : MonoBehaviour
     [SerializeField] private float goodThreshold = 30f; // ±30以内
 
     [SerializeField] private Image patienceBarImage; // ゲージ表示用のUI
+    [SerializeField] private Text tempText; // 要求温度を表示するテキスト（例: "75℃" や "極熱"）
+    [SerializeField] private Image tempIconSprite; // 要求温度の吹き出しやアイコンのスプライト
+
+    [SerializeField] private Color coldTempColor = Color.cyan; // 極冷（0℃付近）
+    [SerializeField] private Color normalTempColor = Color.white; // 常温（50℃付近）
+    [SerializeField] private Color hotTempColor = Color.red; // 極熱（100℃付近
 
     [SerializeField] private bool showDebugLog = true; // デバッグログの表示切り替え
 
@@ -43,6 +49,10 @@ public class Customer : MonoBehaviour
     {
         // 提出済み、移動中は我慢ゲージを減らさない
         if (_isServed || _isMoving)
+            return;
+
+        // プレイ中以外は我慢ゲージを減らさない
+        if (GameManager.Instance != null && GameManager.Instance.CurrentState != GameState.Playing)
             return;
 
         // 時間経過で我慢ゲージを減算
@@ -90,9 +100,43 @@ public class Customer : MonoBehaviour
         _isServed = false;
 
         UpdatePatienceUI();
+        UpdateTargetTempVisual(); // 要求温度の見た目を更新
 
         if (showDebugLog)
             Debug.Log($"<color=cyan>【客登場】</color> 要求温度: {targetTemperature:F1} ℃ | 我慢時間: {maxPatienceTime} 秒");
+    }
+
+    // 要求温度のテキスト・アイコン色を自動更新するメソッド
+    private void UpdateTargetTempVisual()
+    {
+        // テキスト（数値）の表示更新
+        if (tempText != null)
+        {
+            tempText.text = $"{Mathf.RoundToInt(targetTemperature)}℃";
+        }
+
+        // 温度に応じたグラデーションカラーの計算
+        Color calculatedColor;
+        if (targetTemperature < 50f)
+        {
+            float t = targetTemperature / 50f;
+            calculatedColor = Color.Lerp(coldTempColor, normalTempColor, t);
+        }
+        else
+        {
+            float t = (targetTemperature - 50f) / 50f;
+            calculatedColor = Color.Lerp(normalTempColor, hotTempColor, t);
+        }
+
+        // アイコンや吹き出しの色を変えて直感的にする
+        if (tempIconSprite != null)
+        {
+            tempIconSprite.color = calculatedColor;
+        }
+        if (tempText != null)
+        {
+            tempText.color = Color.black;
+        }
     }
 
     // おしぼりを受け取った時の判定・処理
@@ -178,6 +222,12 @@ public class Customer : MonoBehaviour
             string color = eval == CustomerEvaluation.Perfect ? "yellow" : (eval == CustomerEvaluation.Miss ? "red" : "green");
             Debug.Log($"<color={color}>【提供評価】</color> 判定: {eval} | 基礎点: {baseScore} pt | 倍率補正後: {finalScore} pt | 時間変化: {timeChange:F1} 秒 | 我慢残量: {PatienceRatio * 100:F0}%");
         }
+
+        // GameManagerへスコアと判定を通知
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.AddScore(finalScore, eval);
+        }
     }
 
     // タイムアウト怒り退場
@@ -191,6 +241,11 @@ public class Customer : MonoBehaviour
         if (showDebugLog)
             Debug.LogWarning($"<color=red>【怒り退場】</color> 客の我慢限界！ スコア: -500 pt | 時間: -5.0 秒");
 
+        // GameManagerへペナルティ通知
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.ApplyAngerPenalty();
+        }
 
         PlayExitAnimation(false);
     }

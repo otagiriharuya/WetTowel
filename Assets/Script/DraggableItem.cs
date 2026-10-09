@@ -42,6 +42,10 @@ public class DraggableItem : MonoBehaviour, IPointerDownHandler, IBeginDragHandl
     // ドラッグ開始処理
     public void OnBeginDrag(PointerEventData eventData)
     {
+        // プレイ中以外はドラッグ操作を無効化
+        if (GameManager.Instance != null && GameManager.Instance.CurrentState != GameState.Playing)
+            return;
+
         KillActiveSequence(); // 実行中のアニメーションを停止
 
         _startPosition = transform.position; // 初期位置を記憶

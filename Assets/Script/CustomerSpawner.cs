@@ -41,6 +41,12 @@ public class CustomerSpawner : MonoBehaviour
             float waitTime = Random.Range(minSpawnInterval, maxSpawnInterval);
             yield return new WaitForSeconds(waitTime);
 
+            // ƒvƒŒƒC’†ˆÈŠO‚Í¶¬‚ğ’†’f
+            if (GameManager.Instance != null && GameManager.Instance.CurrentState != GameState.Playing)
+            {
+                continue;
+            }
+
             // ‹ó‚¢‚Ä‚¢‚éÈ‚ğ’T‚·
             int emptySeatIndex = GetRandomEmptySeatIndex();
             if (emptySeatIndex != -1)
