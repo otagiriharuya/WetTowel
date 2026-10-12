@@ -1,6 +1,7 @@
-﻿using UnityEngine;
+﻿using DG.Tweening;
 using System;
-using DG.Tweening;
+using UnityEngine;
+using UnityEngine.InputSystem;
 
 // ゲームの状態定義
 public enum GameState
@@ -75,6 +76,27 @@ public class GameManager : MonoBehaviour
             OnTimeChanged?.Invoke(_currentTime);
             EndGame();
         }
+
+        // Escキーでゲームを終わらせる
+        if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
+        {
+            ExitGame();
+        }
+    }
+
+    // ゲームの終了処理
+    public void ExitGame()
+    {
+        if (showDebugLog)
+            Debug.Log("<color=red>【ゲーム終了】</color> Escキーが押されたためアプリを終了します。");
+
+#if UNITY_EDITOR
+        // Unityエディター実行中：再生モードを停止
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
+        // ビルド後（exe等）：アプリケーションを終了
+        Application.Quit();
+#endif
     }
 
     // ゲーム開始処理
