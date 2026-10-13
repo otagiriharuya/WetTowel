@@ -17,9 +17,9 @@ public class CustomerSpawner : MonoBehaviour
     [SerializeField] private float minPatienceTime = 10f; // 最短我慢時間
     [SerializeField] private float maxPatienceTime = 20f; // 最長我慢時間
 
-    [SerializeField] private float moveDuration = 1.2f;    // 着席位置までの移動時間（秒）
+    [SerializeField] private float moveDuration = 1.2f; // 着席位置までの移動時間（秒）
 
-    [SerializeField] private bool showDebugLog = true;
+    [SerializeField] private bool showDebugLog = true; // デバッグログの表示切り替え
 
     // 各席に現在並んでいる客を管理
     private Customer[] _seatOccupants;

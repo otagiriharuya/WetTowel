@@ -21,7 +21,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private int warmerUnlockScore = 3000; // 保温庫2個目の解放スコア
     [SerializeField] private int coolerUnlockScore = 7000; // 保冷庫2個目の解放スコア
 
-    [SerializeField] private bool showDebugLog = true;
+    [SerializeField] private bool showDebugLog = true; // デバッグログの表示切り替え
 
     // ゲーム状態変数
     private float _currentTime;
