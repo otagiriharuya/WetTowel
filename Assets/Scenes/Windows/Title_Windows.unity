@@ -1373,6 +1373,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TitleManager
   startButton: {fileID: 481253006}
   tutorialButton: {fileID: 449601711}
+  exitButton: {fileID: 952847056}
   tutorialPanel: {fileID: 1508427295}
   closeTutorialButton: {fileID: 283683808}
   titleLogoTransform: {fileID: 234639325}

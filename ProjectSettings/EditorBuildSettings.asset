@@ -9,6 +9,12 @@ EditorBuildSettings:
     path: Assets/Scenes/BootScene.unity
     guid: 9695cf5232cebb642b05864ef2947abb
   - enabled: 1
+    path: Assets/Scenes/Windows/Loading_Windows.unity
+    guid: 7979e9c8678e1194cbc30c1fb8f1988f
+  - enabled: 1
+    path: Assets/Scenes/Mobile/Loading_Mobile.unity
+    guid: 361b7fd36e03598479112046245eebc4
+  - enabled: 1
     path: Assets/Scenes/Windows/Title_Windows.unity
     guid: 6aaa2b06605b5554480dc6a8a543e24b
   - enabled: 1

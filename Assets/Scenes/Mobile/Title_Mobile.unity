@@ -1286,6 +1286,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TitleManager
   startButton: {fileID: 1576683974}
   tutorialButton: {fileID: 1920317860}
+  exitButton: {fileID: 627209085}
   tutorialPanel: {fileID: 1980038189}
   closeTutorialButton: {fileID: 215645882}
   titleLogoTransform: {fileID: 1685670633}

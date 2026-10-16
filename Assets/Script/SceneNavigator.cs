@@ -18,25 +18,22 @@ public class SceneNavigator : MonoBehaviour
     // タイトルシーンへ移動
     public void LoadTitleScene()
     {
-        string target = IsMobilePlatform() ? mobileTitleScene : winTitleScene;
-        LoadScene(target);
+        LoadScene(IsMobilePlatform() ? mobileTitleScene : winTitleScene);
     }
 
     // セレクトシーンへ移動
     public void LoadSelectScene()
     {
-        string target = IsMobilePlatform() ? mobileSelectScene : winSelectScene;
-        LoadScene(target);
+        LoadScene(IsMobilePlatform() ? mobileSelectScene : winSelectScene);
     }
 
     // ゲームシーンへ移動
     public void LoadGameScene()
     {
-        string target = IsMobilePlatform() ? mobileGameScene : winGameScene;
-        LoadScene(target);
+        LoadScene(IsMobilePlatform() ? mobileGameScene : winGameScene);
     }
 
-    // 任意のシーン名へロード
+    // 任意のシーンへロード
     public void LoadScene(string sceneName)
     {
         if (string.IsNullOrEmpty(sceneName))
@@ -46,13 +43,11 @@ public class SceneNavigator : MonoBehaviour
             return;
         }
 
-        Time.timeScale = 1.0f; // 時間停止を確実に解除
-
         if (showDebugLog)
-            Debug.Log($"<color=green>【シーン遷移】</color> '{sceneName}' へロードを開始します。");
+            Debug.Log($"<color=green>【シーン遷移】</color> ロード画面を挟んで '{sceneName}' へ遷移します。");
 
-        // 本格的なロード画面を挟む場合はここでローディングシーン経由にする拡張が可能
-        SceneManager.LoadScene(sceneName);
+        // ロード画面シーンを経由して非同期ロードを開始
+        LoadingScreenManager.LoadScene(sceneName);
     }
 
     // モバイルプラットフォーム判定用ヘルパー

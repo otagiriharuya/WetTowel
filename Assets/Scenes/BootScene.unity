@@ -420,8 +420,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1626168096}
-  - component: {fileID: 1626168095}
-  - component: {fileID: 1626168098}
+  - component: {fileID: 1626168097}
   m_Layer: 0
   m_Name: SystemManager
   m_TagString: Untagged
@@ -429,21 +428,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1626168095
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1626168094}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 785c3b08210a13f4f9e4a54c076b4ad5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SceneLoader
-  windowsSceneName: Title_Windows
-  androidSceneName: Title_Mobile
-  showDebugLog: 1
 --- !u!224 &1626168096
 RectTransform:
   m_ObjectHideFlags: 0
@@ -463,7 +447,7 @@ RectTransform:
   m_AnchoredPosition: {x: 960, y: 780}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1626168098
+--- !u!114 &1626168097
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -472,14 +456,17 @@ MonoBehaviour:
   m_GameObject: {fileID: 1626168094}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9c4af07557df9ff498fd54eeb16c07e3, type: 3}
+  m_Script: {fileID: 11500000, guid: 19cb46bc7e13f61408d2caf2f080c2ae, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ScreenResolution
+  m_EditorClassIdentifier: Assembly-CSharp::InitApp
+  targetFrameRate: 60
   windowsWidth: 1920
   windowsHeight: 1080
   isWinFullScreen: 1
+  windowsFirstScene: Title_Windows
   androidWidth: 1080
   androidHeight: 1920
+  androidFirstScene: Title_Mobile
   showDebugLog: 1
 --- !u!1 &1709827499
 GameObject:
