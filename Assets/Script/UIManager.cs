@@ -1,7 +1,7 @@
-﻿using UnityEngine;
-using UnityEngine.UI;
+﻿using DG.Tweening;
+using UnityEngine;
 using UnityEngine.SceneManagement;
-using DG.Tweening;
+using UnityEngine.UI;
 
 public class UIManager : MonoBehaviour
 {
@@ -9,16 +9,19 @@ public class UIManager : MonoBehaviour
     [SerializeField] private Text scoreText; // スコアテキスト
     [SerializeField] private Text comboText; // コンボテキスト
 
-    [SerializeField] private GameObject timeUpPanel; // TimeUp画面全体の親オブジェクト
+    [SerializeField] private GameObject resultPanel; // リザルト全体パネル
     [SerializeField] private Text finalScoreText; // 最終スコアテキスト
     [SerializeField] private Text highScoreText; // ハイスコアテキスト
     [SerializeField] private Button restartButton; // リスタートボタン
+    [SerializeField] private Button titleButton; // タイトルへ戻るボタン
 
     [SerializeField] private Color normalTimeColor = Color.white; // 通常時のタイマー文字色
     [SerializeField] private Color warningTimeColor = Color.red; // 残り時間わずか（10秒以下）の文字色
     [SerializeField] private float warningThreshold = 10f; // 警告演出を始める秒数
 
-    [SerializeField] private bool showDebugLog = true;
+    [SerializeField] private SceneNavigator sceneNavigator;
+
+    [SerializeField] private bool showDebugLog = true; // デバッグログの表示切り替え
 
     private int _lastDisplayedTime = -1; // 不要なテキスト更新を減らすための保持変数
 
@@ -33,25 +36,24 @@ public class UIManager : MonoBehaviour
 
     private void Start()
     {
-        // OnEnable時点でGameManagerが未準備だった場合のフォールバック登録
-        SubscribeEvents();
+        SubscribeEvents(); // OnEnable時点でGameManagerが未準備だった場合のフォールバック登録
 
         // 初期UI状態のセットアップ
-        if (timeUpPanel != null)
-        {
-            timeUpPanel.SetActive(false);
-        }
+        if (resultPanel != null)
+            resultPanel.SetActive(false);
 
         if (comboText != null)
-        {
             comboText.gameObject.SetActive(false); // コンボ非表示からスタート
-        }
 
-        // リスタートボタンのクリックイベント設定
+        // ボタンのクリックイベント設定
         if (restartButton != null)
-        {
             restartButton.onClick.AddListener(OnRestartButtonClicked);
-        }
+        if (titleButton != null)
+            titleButton.onClick.AddListener(OnTitleButtonClicked);
+
+        // 初期状態でミス表示・時間表示を即座にUIへ適用
+        if (GameManager.Instance != null)
+            UpdateMissUI(GameManager.Instance.MissCount);
     }
 
     private void OnDisable()
@@ -62,11 +64,12 @@ public class UIManager : MonoBehaviour
             GameManager.Instance.OnTimeChanged -= UpdateTimeUI;
             GameManager.Instance.OnScoreChanged -= UpdateScoreUI;
             GameManager.Instance.OnComboChanged -= UpdateComboUI;
+            GameManager.Instance.OnMissChanged -= UpdateMissUI;
             GameManager.Instance.OnStateChanged -= HandleStateChanged;
         }
     }
 
-    // イベントの二重登録を防ぎつつ購読
+    // イベントの登録
     private void SubscribeEvents()
     {
         if (GameManager.Instance == null)
@@ -75,39 +78,75 @@ public class UIManager : MonoBehaviour
         GameManager.Instance.OnTimeChanged -= UpdateTimeUI;
         GameManager.Instance.OnScoreChanged -= UpdateScoreUI;
         GameManager.Instance.OnComboChanged -= UpdateComboUI;
+        GameManager.Instance.OnMissChanged -= UpdateMissUI;
         GameManager.Instance.OnStateChanged -= HandleStateChanged;
 
         GameManager.Instance.OnTimeChanged += UpdateTimeUI;
         GameManager.Instance.OnScoreChanged += UpdateScoreUI;
         GameManager.Instance.OnComboChanged += UpdateComboUI;
+        GameManager.Instance.OnMissChanged += UpdateMissUI;
         GameManager.Instance.OnStateChanged += HandleStateChanged;
     }
 
     // 制限時間の表示更新
-    private void UpdateTimeUI(float currentTime)
+    private void UpdateTimeUI(float timeValue)
     {
-        int displayTime = Mathf.CeilToInt(currentTime); // 小数点繰り上げ表示
+        if(GameManager.Instance == null || timeText == null)
+            return;
 
-        // 秒数が変わったタイミングのみテキストを更新
+        string currentMode = GameManager.Instance.CurrentMode; // 現在のモードをセット
+
+        // タイムアタック（リアルタイム経過秒数を表示）
+        if (currentMode == "TIME ATTACK")
+        {
+            timeText.text = $"TIME: {timeValue:F1}s";
+            timeText.color = normalTimeColor;
+            return;
+        }
+
+        // エンドレス（ミス表示はUpdateMissUI側で専任制御するためスルー）
+        if (currentMode == "ENDLESS")
+        {
+            return;
+        }
+
+        // スタンダード / スコアアタック（残り時間をカウントダウン）
+        int displayTime = Mathf.CeilToInt(timeValue);
+
         if (displayTime != _lastDisplayedTime)
         {
             _lastDisplayedTime = displayTime;
+            timeText.text = $"TIME: {displayTime}";
 
-            if (timeText != null)
+            // 残り時間わずかで赤字化＆拡大アピール（DOTween）
+            if (timeValue <= warningThreshold && timeValue > 0)
             {
-                timeText.text = $"TIME: {displayTime}";
+                timeText.color = warningTimeColor;
+                timeText.transform.DOKill();
+                timeText.transform.DOPunchScale(Vector3.one * 0.2f, 0.2f, 5, 1f);
+            }
+            else
+            {
+                timeText.color = normalTimeColor;
+            }
+        }
+    }
 
-                // 残り時間わずかで赤字化＆拡大アピール（DOTween）
-                if (currentTime <= warningThreshold && currentTime > 0)
-                {
-                    timeText.color = warningTimeColor;
-                    timeText.transform.DOKill();
-                    timeText.transform.DOPunchScale(Vector3.one * 0.2f, 0.2f, 5, 1f);
-                }
-                else
-                {
-                    timeText.color = normalTimeColor;
-                }
+    // エンドレスモード時のミス数の更新
+    private void UpdateMissUI(int missCount)
+    {
+        if (GameManager.Instance == null || timeText == null)
+            return;
+
+        if (GameManager.Instance.CurrentMode == "ENDLESS")
+        {
+            timeText.text = $"MISS: {missCount} / 3";
+            timeText.color = missCount >= 2 ? warningTimeColor : normalTimeColor;
+
+            if (missCount > 0)
+            {
+                timeText.transform.DOKill();
+                timeText.transform.DOPunchScale(Vector3.one * 0.2f, 0.2f, 5, 1f);
             }
         }
     }
@@ -151,54 +190,54 @@ public class UIManager : MonoBehaviour
     // ゲーム状態変更（GameOver画面表示）のポップアップ制御
     private void HandleStateChanged(GameState state)
     {
-        if (state == GameState.GameOver)
+        if (state == GameState.GameOver || state == GameState.GameClear)
         {
-            ShowGameOverPanel();
+            ShowResultPanel(state == GameState.GameClear);
         }
     }
 
-    // プレイ中UIの一括表示 / 非表示切り替え
-    private void SetInGameUIActive(bool isActive)
+    // リザルト画面の表示
+    private void ShowResultPanel(bool isClear)
     {
-        if (timeText != null)
-            timeText.gameObject.SetActive(isActive);
-        if (scoreText != null)
-            scoreText.gameObject.SetActive(isActive);
-        // comboTextはコンボ数に応じた表示制御があるため非表示時のみ直接切る
-        if (!isActive && comboText != null)
-            comboText.gameObject.SetActive(false);
-    }
-
-    // GameOverパネル表示演出
-    private void ShowGameOverPanel()
-    {
-        if (timeUpPanel == null)
+        if (resultPanel == null || GameManager.Instance == null)
             return;
 
-        SetInGameUIActive(false);
-        timeUpPanel.SetActive(true);
+        resultPanel.SetActive(true);
 
-        int finalScore = GameManager.Instance != null ? GameManager.Instance.CurrentScore : 0;
-        int highScore = PlayerPrefs.GetInt("HighScore", 0);
+        string mode = GameManager.Instance.CurrentMode;
+        string diff = GameManager.Instance.CurrentDifficulty;
+        string saveKey = $"HighScore_{mode}_{diff}";
 
-        if (finalScoreText != null)
-            finalScoreText.text = $"FINAL SCORE\n{finalScore:N0}";
-        if (highScoreText != null)
-            highScoreText.text = $"HIGH SCORE\n{highScore:N0}";
-
-        // ふんわり浮き出るフェードイン＆拡大表示（DOTween）
-        CanvasGroup canvasGroup = timeUpPanel.GetComponent<CanvasGroup>();
-        if (canvasGroup != null)
+        if (mode == "TIME ATTACK")
         {
-            canvasGroup.alpha = 0f;
-            canvasGroup.DOFade(1f, 0.4f).SetUpdate(true);
+            float finalTime = GameManager.Instance.ElapsedTimeForTimeAttack;
+            float bestTime = PlayerPrefs.GetFloat(saveKey, 9999f);
+
+            if (finalScoreText != null)
+                finalScoreText.text = $"CLEAR TIME\n{finalTime:F2} 秒";
+            if (highScoreText != null)
+                highScoreText.text = bestTime <= 9999f ? $"BEST TIME\n{bestTime:F2} 秒" : "BEST TIME\n--.-- 秒";
+        }
+        else
+        {
+            int finalScore = GameManager.Instance.CurrentScore;
+            int highScore = PlayerPrefs.GetInt(saveKey, 0);
+
+            if (finalScoreText != null)
+                finalScoreText.text = $"FINAL SCORE\n{finalScore:N0} pt";
+            if (highScoreText != null)
+                highScoreText.text = $"HIGH SCORE\n{highScore:N0} pt";
         }
 
-        timeUpPanel.transform.localScale = Vector3.one * 0.8f;
-        timeUpPanel.transform.DOScale(Vector3.one, 0.4f).SetEase(Ease.OutBack);
+        CanvasGroup cg = resultPanel.GetComponent<CanvasGroup>();
+        if (cg != null)
+        {
+            cg.alpha = 0f;
+            cg.DOFade(1f, 0.4f).SetUpdate(true);
+        }
 
-        if (showDebugLog)
-            Debug.Log($"<color=red>【UI表示】</color> GameOverパネルを表示しました。（最終スコア: {finalScore}）");
+        resultPanel.transform.localScale = Vector3.one * 0.8f;
+        resultPanel.transform.DOScale(Vector3.one, 0.4f).SetEase(Ease.OutBack).SetUpdate(true);
     }
 
     // リスタートボタンのアクション
@@ -216,6 +255,21 @@ public class UIManager : MonoBehaviour
         SceneManager.LoadScene(currentScene.name);
     }
 
+    // タイトルボタンのアクション
+    private void OnTitleButtonClicked()
+    {
+        DOTween.KillAll();
+        Time.timeScale = 1.0f;
+        if (sceneNavigator != null)
+        {
+            sceneNavigator.LoadTitleScene();
+        }
+        else
+        {
+            SceneManager.LoadScene("Title_Windows");
+        }
+    }
+
     private void OnDestroy()
     {
         if (timeText != null)
@@ -224,7 +278,7 @@ public class UIManager : MonoBehaviour
             scoreText.transform.DOKill();
         if (comboText != null)
             comboText.transform.DOKill();
-        if (timeUpPanel != null)
-            timeUpPanel.transform.DOKill();
+        if (resultPanel != null)
+            resultPanel.transform.DOKill();
     }
 }

@@ -5,9 +5,10 @@ using DG.Tweening;
 // 提供時の評価定義
 public enum CustomerEvaluation
 {
-    Perfect, // 誤差 ±5以内
-    Great, // 誤差 ±15以内
-    Good, // 誤差 ±30以内
+    // 誤差は難易度により推移
+    Perfect, // 誤差 極小
+    Great, // 誤差 小
+    Good, // 誤差 中
     Miss // 誤差 大 または 失敗作（焦げ・カチコチ）
 }
 
@@ -26,13 +27,18 @@ public class Customer : MonoBehaviour
 
     [SerializeField] private Color coldTempColor = Color.cyan; // 極冷（0℃付近）
     [SerializeField] private Color normalTempColor = Color.white; // 常温（50℃付近）
-    [SerializeField] private Color hotTempColor = Color.red; // 極熱（100℃付近
+    [SerializeField] private Color hotTempColor = Color.red; // 極熱（100℃付近）
 
     [SerializeField] private bool showDebugLog = true; // デバッグログの表示切り替え
 
     private float _currentPatienceTime; // 現在の残り我慢時間
     private bool _isServed = false; // すでに提供済みか
     private bool _isMoving = false; // 移動中フラグ
+
+    // 難易度によって調整された動的判定閾値
+    private float _appliedPerfectThreshold;
+    private float _appliedGreatThreshold;
+    private float _appliedGoodThreshold;
 
     public float TargetTemperature => targetTemperature;
     public float PatienceRatio => Mathf.Clamp01(_currentPatienceTime / maxPatienceTime); // 我慢ゲージ割合 (0.0〜1.0)
@@ -42,6 +48,7 @@ public class Customer : MonoBehaviour
     private void Awake()
     {
         _currentPatienceTime = maxPatienceTime;
+        ApplyDifficultySettings(); // 難易度に応じた判定閾値の調整
         UpdatePatienceUI();
     }
 
@@ -63,6 +70,31 @@ public class Customer : MonoBehaviour
         if (_currentPatienceTime <= 0f)
         {
             OnPatienceTimeout();
+        }
+    }
+
+    // 難易度に応じた判定範囲の調整
+    private void ApplyDifficultySettings()
+    {
+        string diff = GameManager.Instance != null ? GameManager.Instance.CurrentDifficulty : "NORMAL";
+
+        switch (diff)
+        {
+            case "EASY":
+                _appliedPerfectThreshold = perfectThreshold * 1.6f; // 判定がゆるい (例: ±8)
+                _appliedGreatThreshold = greatThreshold * 1.5f; // (例: ±22.5)
+                _appliedGoodThreshold = goodThreshold * 1.3f; // (例: ±39)
+                break;
+            case "HARD":
+                _appliedPerfectThreshold = perfectThreshold * 0.6f; // 判定が厳しい (例: ±3)
+                _appliedGreatThreshold = greatThreshold * 0.7f; // (例: ±10.5)
+                _appliedGoodThreshold = goodThreshold * 0.8f; // (例: ±24)
+                break;
+            default: // NORMAL
+                _appliedPerfectThreshold = perfectThreshold;
+                _appliedGreatThreshold = greatThreshold;
+                _appliedGoodThreshold = goodThreshold;
+                break;
         }
     }
 
@@ -99,6 +131,7 @@ public class Customer : MonoBehaviour
         _currentPatienceTime = maxPatienceTime;
         _isServed = false;
 
+        ApplyDifficultySettings(); // 難易度再確認・反映
         UpdatePatienceUI();
         UpdateTargetTempVisual(); // 要求温度の見た目を更新
 
@@ -168,7 +201,7 @@ public class Customer : MonoBehaviour
         // 失敗作チェック（焦げ・カチコチ）
         if (wetTowel.CurrentState != WetTowelState.Normal)
         {
-            ProcessEvaluation(CustomerEvaluation.Miss, 0, -200, -2.0f);
+            ProcessEvaluation(CustomerEvaluation.Miss, 0, -200);
             PlayExitAnimation(false);
             return;
         }
@@ -178,17 +211,17 @@ public class Customer : MonoBehaviour
         CustomerEvaluation eval;
         int baseScore = 0;
 
-        if (tempDiff <= perfectThreshold)
+        if (tempDiff <= _appliedPerfectThreshold)
         {
             eval = CustomerEvaluation.Perfect;
             baseScore = 1000;
         }
-        else if (tempDiff <= greatThreshold)
+        else if (tempDiff <= _appliedGreatThreshold)
         {
             eval = CustomerEvaluation.Great;
             baseScore = 600;
         }
-        else if (tempDiff <= goodThreshold)
+        else if (tempDiff <= _appliedGoodThreshold)
         {
             eval = CustomerEvaluation.Good;
             baseScore = 300;
@@ -199,7 +232,7 @@ public class Customer : MonoBehaviour
             baseScore = 0;
         }
 
-        // 我慢ゲージ残量によるスコア倍率計算（仕様通り）
+        // 我慢ゲージ残量によるスコア倍率計算
         float multiplier = 1.0f;
         if (PatienceRatio >= 0.7f)
             multiplier = 1.5f; // 素早い提供ボーナス
@@ -207,20 +240,19 @@ public class Customer : MonoBehaviour
             multiplier = 0.8f; // ギリギリ提供補正
 
         int finalScore = Mathf.RoundToInt(baseScore * multiplier);
-        float timeChange = (eval == CustomerEvaluation.Perfect) ? 1.0f : ((eval == CustomerEvaluation.Miss) ? -2.0f : 0f);
-
+        
         // 結果のログ出力＆処理
-        ProcessEvaluation(eval, baseScore, finalScore, timeChange);
+        ProcessEvaluation(eval, baseScore, finalScore);
         PlayExitAnimation(eval != CustomerEvaluation.Miss);
     }
 
     // 評価結果の処理
-    private void ProcessEvaluation(CustomerEvaluation eval, int baseScore, int finalScore, float timeChange)
+    private void ProcessEvaluation(CustomerEvaluation eval, int baseScore, int finalScore)
     {
         if (showDebugLog)
         {
             string color = eval == CustomerEvaluation.Perfect ? "yellow" : (eval == CustomerEvaluation.Miss ? "red" : "green");
-            Debug.Log($"<color={color}>【提供評価】</color> 判定: {eval} | 基礎点: {baseScore} pt | 倍率補正後: {finalScore} pt | 時間変化: {timeChange:F1} 秒 | 我慢残量: {PatienceRatio * 100:F0}%");
+            Debug.Log($"<color={color}>【提供評価】</color> 判定: {eval} | 基礎点: {baseScore} pt | 倍率補正後: {finalScore} pt | 我慢残量: {PatienceRatio * 100:F0}%");
         }
 
         // GameManagerへスコアと判定を通知
@@ -239,7 +271,7 @@ public class Customer : MonoBehaviour
         _isServed = true;
 
         if (showDebugLog)
-            Debug.LogWarning($"<color=red>【怒り退場】</color> 客の我慢限界！ スコア: -500 pt | 時間: -5.0 秒");
+            Debug.LogWarning($"<color=red>【怒り退場】</color> 客の我慢限界！ スコア: -500 pt");
 
         // GameManagerへペナルティ通知
         if (GameManager.Instance != null)

@@ -150,6 +150,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GameManager
   initialTime: 60
   maxTime: 99
+  targetScoreForTimeAttack: 5000
   warmerUnlockScore: 3000
   coolerUnlockScore: 7000
   showDebugLog: 1
@@ -627,7 +628,9 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: Score:00000
+  m_Text: 'Score
+
+    00000'
 --- !u!222 &110205042
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1348,7 +1351,7 @@ GameObject:
   - component: {fileID: 601722210}
   - component: {fileID: 601722209}
   m_Layer: 5
-  m_Name: ExitButton
+  m_Name: ResultButton
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1417,19 +1420,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 601722210}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 540534765}
-        m_TargetAssemblyTypeName: SceneNavigator, Assembly-CSharp
-        m_MethodName: LoadTitleScene
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
 --- !u!114 &601722210
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1511,7 +1502,7 @@ GameObject:
   - component: {fileID: 711933997}
   - component: {fileID: 711933996}
   m_Layer: 5
-  m_Name: TimeUpText
+  m_Name: ResultText
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1569,7 +1560,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: TIME UP!!
+  m_Text: RESULT
 --- !u!222 &711933997
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1838,7 +1829,7 @@ GameObject:
   - component: {fileID: 1038124630}
   - component: {fileID: 1038124631}
   m_Layer: 0
-  m_Name: TimeUpPanell
+  m_Name: ResultPanell
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2138,13 +2129,15 @@ MonoBehaviour:
   timeText: {fileID: 1568669457}
   scoreText: {fileID: 1820122618}
   comboText: {fileID: 345115486}
-  timeUpPanel: {fileID: 1038124629}
+  resultPanel: {fileID: 1038124629}
   finalScoreText: {fileID: 110205041}
   highScoreText: {fileID: 2052762026}
   restartButton: {fileID: 89632451}
+  titleButton: {fileID: 601722209}
   normalTimeColor: {r: 1, g: 1, b: 1, a: 1}
   warningTimeColor: {r: 1, g: 0, b: 0, a: 1}
   warningThreshold: 10
+  sceneNavigator: {fileID: 0}
   showDebugLog: 1
 --- !u!114 &1465620386
 MonoBehaviour:
@@ -2532,7 +2525,9 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: HighScore:0000
+  m_Text: 'HighScore
+
+    0000'
 --- !u!222 &2052762027
 CanvasRenderer:
   m_ObjectHideFlags: 0

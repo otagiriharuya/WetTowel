@@ -1,60 +1,75 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using UnityEngine.UI;
 using DG.Tweening;
 
 public class SelectManager : MonoBehaviour
 {
     [SerializeField] private Text difficultyText;
-    [SerializeField] private Button diffPrevButton; // ¶‚ÌOŠpŒ`ƒ{ƒ^ƒ“
-    [SerializeField] private Button diffNextButton; // ‰E‚ÌOŠpŒ`ƒ{ƒ^ƒ“
+    [SerializeField] private Button diffPrevButton; // å·¦ã®ä¸‰è§’å½¢ãƒœã‚¿ãƒ³
+    [SerializeField] private Button diffNextButton; // å³ã®ä¸‰è§’å½¢ãƒœã‚¿ãƒ³
 
     [SerializeField] private Text modeText;
-    [SerializeField] private Button modePrevButton; // ¶‚ÌOŠpŒ`ƒ{ƒ^ƒ“
-    [SerializeField] private Button modeNextButton; // ‰E‚ÌOŠpŒ`ƒ{ƒ^ƒ“
+    [SerializeField] private Button modePrevButton; // å·¦ã®ä¸‰è§’å½¢ãƒœã‚¿ãƒ³
+    [SerializeField] private Button modeNextButton; // å³ã®ä¸‰è§’å½¢ãƒœã‚¿ãƒ³
 
-    [SerializeField] private Button startButton; // –{•ÒƒQ[ƒ€ŠJn
-    [SerializeField] private Button miniGameButton; // ƒ~ƒjƒQ[ƒ€ŠJni–¢À‘•—pj
-    [SerializeField] private Button backButton; // ƒ^ƒCƒgƒ‹‚Ö–ß‚é
+    [SerializeField] private Button startButton; // æœ¬ç·¨ã‚²ãƒ¼ãƒ é–‹å§‹
+    [SerializeField] private Button miniGameButton; // ãƒŸãƒ‹ã‚²ãƒ¼ãƒ é–‹å§‹ï¼ˆæœªå®Ÿè£…ç”¨ï¼‰
+    [SerializeField] private Button backButton; // ã‚¿ã‚¤ãƒˆãƒ«ã¸æˆ»ã‚‹
+
+    [SerializeField] private Button ruleButton; // ãƒ«ãƒ¼ãƒ«ï¼ˆä»•æ§˜ï¼‰ç¢ºèªãƒœã‚¿ãƒ³
+    [SerializeField] private GameObject rulePanel; // ãƒ«ãƒ¼ãƒ«èª¬æ˜ãƒ‘ãƒãƒ«
+    [SerializeField] private Button closeRuleButton; // ãƒ«ãƒ¼ãƒ«ãƒ‘ãƒãƒ«é–‰ã˜ã‚‹ãƒœã‚¿ãƒ³
 
     [SerializeField] private SceneNavigator sceneNavigator;
 
-    [SerializeField] private bool showDebugLog = true; // ƒfƒoƒbƒOƒƒO‚Ì•\¦Ø‚è‘Ö‚¦
+    [SerializeField] private bool showDebugLog = true; // ãƒ‡ãƒãƒƒã‚°ãƒ­ã‚°ã®è¡¨ç¤ºåˆ‡ã‚Šæ›¿ãˆ
 
-    // ‘I‘ğˆ‚Ì’è‹`
+    // é¸æŠè‚¢ã®å®šç¾©
     private string[] _difficulties = { "EASY", "NORMAL", "HARD" };
-    private int _currentDiffIndex = 1; // ƒfƒtƒHƒ‹ƒg‚ÍNORMAL
+    private int _currentDiffIndex = 1; // ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆã¯NORMAL
 
-    private string[] _modes = { "STANDARD", "TIME ATTACK", "ENDLESS" };
-    private int _currentModeIndex = 0; // ƒfƒtƒHƒ‹ƒg‚ÍSTANDARD
+    private string[] _modes = { "STANDARD", "TIME ATTACK", "SCORE ATTACK", "ENDLESS" };
+    private int _currentModeIndex = 0; // ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆã¯STANDARD
 
     private void Start()
     {
-        // ƒ{ƒ^ƒ“ƒCƒxƒ“ƒg‚Ì“o˜^
+        // ãƒœã‚¿ãƒ³ã‚¤ãƒ™ãƒ³ãƒˆã®ç™»éŒ²
+        // é›£æ˜“åº¦åˆ‡æ›¿
         if (diffPrevButton != null)
             diffPrevButton.onClick.AddListener(() => ChangeDifficulty(-1));
         if (diffNextButton != null)
             diffNextButton.onClick.AddListener(() => ChangeDifficulty(1));
 
+        // ãƒ¢ãƒ¼ãƒ‰åˆ‡æ›¿
         if (modePrevButton != null)
             modePrevButton.onClick.AddListener(() => ChangeMode(-1));
         if (modeNextButton != null)
             modeNextButton.onClick.AddListener(() => ChangeMode(1));
 
+        // ã‚²ãƒ¼ãƒ é–‹å§‹
         if (startButton != null)
             startButton.onClick.AddListener(OnStartButtonClicked);
+        // ãƒŸãƒ‹ã‚²ãƒ¼ãƒ 
         if (miniGameButton != null)
             miniGameButton.onClick.AddListener(OnMiniGameButtonClicked);
+        // ã‚¿ã‚¤ãƒˆãƒ«ã¸æˆ»ã‚‹
         if (backButton != null)
             backButton.onClick.AddListener(OnBackButtonClicked);
 
-        // ‰ŠúUI‚Ì”½‰f
+        // ãƒ«ãƒ¼ãƒ«ç¢ºèª
+        if (ruleButton != null)
+            ruleButton.onClick.AddListener(ToggleRulePanel);
+        if (closeRuleButton != null)
+            closeRuleButton.onClick.AddListener(ToggleRulePanel);
+
+        // åˆæœŸUIã®åæ˜ 
         UpdateUI();
 
         if (showDebugLog)
-            Debug.Log("<color=cyan>yƒZƒŒƒNƒg‰æ–Êz</color> ‰Šú‰»‚ªŠ®—¹‚µ‚Ü‚µ‚½B");
+            Debug.Log("<color=cyan>ã€ã‚»ãƒ¬ã‚¯ãƒˆç”»é¢ã€‘</color> åˆæœŸåŒ–ãŒå®Œäº†ã—ã¾ã—ãŸã€‚");
     }
 
-    // “ïˆÕ“x‚ÌØ‚è‘Ö‚¦
+    // é›£æ˜“åº¦ã®åˆ‡ã‚Šæ›¿ãˆ
     private void ChangeDifficulty(int direction)
     {
         _currentDiffIndex += direction;
@@ -65,7 +80,7 @@ public class SelectManager : MonoBehaviour
 
         UpdateUI();
 
-        // •ÏX‚Ì‰‰o
+        // å¤‰æ›´æ™‚ã®æ¼”å‡º
         if (difficultyText != null)
         {
             difficultyText.transform.DOKill();
@@ -74,10 +89,10 @@ public class SelectManager : MonoBehaviour
         }
 
         if (showDebugLog)
-            Debug.Log($"<color=yellow>y“ïˆÕ“x•ÏXz</color> {_difficulties[_currentDiffIndex]}");
+            Debug.Log($"<color=yellow>ã€é›£æ˜“åº¦å¤‰æ›´ã€‘</color> {_difficulties[_currentDiffIndex]}");
     }
 
-    // ƒ‚[ƒh‚ÌØ‚è‘Ö‚¦
+    // ãƒ¢ãƒ¼ãƒ‰ã®åˆ‡ã‚Šæ›¿ãˆ
     private void ChangeMode(int direction)
     {
         _currentModeIndex += direction;
@@ -95,29 +110,84 @@ public class SelectManager : MonoBehaviour
             modeText.transform.DOPunchScale(Vector3.one * 0.2f, 0.15f, 5, 1f);
         }
 
+        // TIME ATTACK ã¨ SCORE ATTACK ã¯é›£æ˜“åº¦HARDå›ºå®šã«ãªã‚‹æ—¨ã®è‡ªå‹•èª¿æ•´ãƒ»è¡¨ç¤ºåˆ¶å¾¡
+        string selectedMode = _modes[_currentModeIndex];
+        if (selectedMode == "TIME ATTACK" || selectedMode == "SCORE ATTACK")
+        {
+            _currentDiffIndex = 2; // HARDå›ºå®š
+            UpdateUI();
+        }
+
         if (showDebugLog)
-            Debug.Log($"<color=yellow>yƒ‚[ƒh•ÏXz</color> {_modes[_currentModeIndex]}");
+            Debug.Log($"<color=yellow>ã€ãƒ¢ãƒ¼ãƒ‰å¤‰æ›´ã€‘</color> {_modes[_currentModeIndex]}");
     }
 
-    // UIƒeƒLƒXƒg‚ÌXV
+    // UIãƒ†ã‚­ã‚¹ãƒˆã®æ›´æ–°
     private void UpdateUI()
     {
+        string selectedMode = _modes[_currentModeIndex];
+
         if (difficultyText != null)
-            difficultyText.text = _difficulties[_currentDiffIndex];
+        {
+            // ã‚¿ã‚¤ãƒ ãƒ»ã‚¹ã‚³ã‚¢ã‚¢ã‚¿ãƒƒã‚¯ã¯ãƒãƒ¼ãƒ‰å›ºå®šè¡¨ç¤º
+            if (selectedMode == "TIME ATTACK" || selectedMode == "SCORE ATTACK")
+            {
+                difficultyText.text = "HARD (FIXED)";
+            }
+            else if (selectedMode == "ENDLESS")
+            {
+                difficultyText.text = "EASY â” HARD";
+            }
+            else
+            {
+                difficultyText.text = _difficulties[_currentDiffIndex];
+            }
+        }
 
         if (modeText != null)
             modeText.text = _modes[_currentModeIndex];
     }
 
-    // ƒQ[ƒ€ŠJnƒ{ƒ^ƒ“
+    // ãƒ«ãƒ¼ãƒ«ç¢ºèªãƒ‘ãƒãƒ«ã®é–‹é–‰
+    private void ToggleRulePanel()
+    {
+        if (rulePanel == null)
+            return;
+
+        bool isActive = !rulePanel.activeSelf;
+        rulePanel.SetActive(isActive);
+
+        if (isActive)
+        {
+            CanvasGroup cg = rulePanel.GetComponent<CanvasGroup>();
+            if (cg != null)
+            {
+                cg.alpha = 0f;
+                cg.DOFade(1f, 0.25f).SetUpdate(true);
+            }
+            rulePanel.transform.localScale = Vector3.one * 0.9f;
+            rulePanel.transform.DOScale(Vector3.one, 0.25f).SetEase(Ease.OutBack).SetUpdate(true);
+        }
+    }
+
+    // ã‚²ãƒ¼ãƒ é–‹å§‹ãƒœã‚¿ãƒ³
     private void OnStartButtonClicked()
     {
-        if (showDebugLog)
-            Debug.Log($"<color=green>yƒQ[ƒ€ŠJnz</color> “ïˆÕ“x: {_difficulties[_currentDiffIndex]} / ƒ‚[ƒh: {_modes[_currentModeIndex]} ‚ÅƒQ[ƒ€‚ğŠJn‚µ‚Ü‚·B");
+        string finalDiff = _difficulties[_currentDiffIndex];
+        string finalMode = _modes[_currentModeIndex];
 
-        // ‘I‘ğ‚³‚ê‚½İ’è‚ğ PlayerPrefs ‚â static ƒNƒ‰ƒX“™‚Å•Û‘¶‚µ‚Ä‚¨‚­iƒQ[ƒ€ƒV[ƒ“‘¤‚ÅQÆ‚·‚é‚½‚ßj
-        PlayerPrefs.SetString("SelectedDifficulty", _difficulties[_currentDiffIndex]);
-        PlayerPrefs.SetString("SelectedMode", _modes[_currentModeIndex]);
+        // ä»•æ§˜ä¸Šã®å¼·åˆ¶å›ºå®šã‚’é©ç”¨
+        if (finalMode == "TIME ATTACK" || finalMode == "SCORE ATTACK")
+        {
+            finalDiff = "HARD";
+        }
+
+        if (showDebugLog)
+            Debug.Log($"<color=green>ã€ã‚²ãƒ¼ãƒ é–‹å§‹ã€‘</color> ãƒ¢ãƒ¼ãƒ‰: {finalMode} / é›£æ˜“åº¦: {finalDiff} ã§é–‹å§‹ã—ã¾ã™ã€‚");
+
+        // æ­£ã—ã„é›£æ˜“åº¦(finalDiff)ã¨ãƒ¢ãƒ¼ãƒ‰(finalMode)ã‚’ä¿å­˜
+        PlayerPrefs.SetString("SelectedDifficulty", finalDiff);
+        PlayerPrefs.SetString("SelectedMode", finalMode);
         PlayerPrefs.Save();
 
         if (startButton != null)
@@ -131,11 +201,11 @@ public class SelectManager : MonoBehaviour
         }
     }
 
-    // ƒ~ƒjƒQ[ƒ€ƒ{ƒ^ƒ“i–¢À‘•—pj
+    // ãƒŸãƒ‹ã‚²ãƒ¼ãƒ ãƒœã‚¿ãƒ³ï¼ˆæœªå®Ÿè£…ç”¨ï¼‰
     private void OnMiniGameButtonClicked()
     {
         if (showDebugLog)
-            Debug.Log("<color=orange>yƒ~ƒjƒQ[ƒ€z</color> ƒ~ƒjƒQ[ƒ€‚ÍŒ»İ–¢À‘•‚Å‚·B¡Œã‚ÌƒAƒbƒvƒf[ƒg‚ğ‚¨Šy‚µ‚İ‚ÉI");
+            Debug.Log("<color=orange>ã€ãƒŸãƒ‹ã‚²ãƒ¼ãƒ ã€‘</color> ãƒŸãƒ‹ã‚²ãƒ¼ãƒ ã¯ç¾åœ¨æœªå®Ÿè£…ã§ã™ã€‚ä»Šå¾Œã®ã‚¢ãƒƒãƒ—ãƒ‡ãƒ¼ãƒˆã‚’ãŠæ¥½ã—ã¿ã«ï¼");
 
         if (miniGameButton != null)
         {
@@ -144,7 +214,7 @@ public class SelectManager : MonoBehaviour
         }
     }
 
-    // ƒ^ƒCƒgƒ‹‚Ö–ß‚éƒ{ƒ^ƒ“
+    // ã‚¿ã‚¤ãƒˆãƒ«ã¸æˆ»ã‚‹ãƒœã‚¿ãƒ³
     private void OnBackButtonClicked()
     {
         if (sceneNavigator != null)

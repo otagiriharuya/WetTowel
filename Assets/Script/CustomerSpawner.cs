@@ -38,7 +38,18 @@ public class CustomerSpawner : MonoBehaviour
     {
         while (true)
         {
-            float waitTime = Random.Range(minSpawnInterval, maxSpawnInterval);
+            // モードや難易度に応じた動的なスポーン間隔の調整
+            float currentMinInterval = minSpawnInterval;
+            float currentMaxInterval = maxSpawnInterval;
+
+            if (GameManager.Instance != null && GameManager.Instance.CurrentMode == "ENDLESS")
+            {
+                float progress = GameManager.Instance.GetEndlessDifficultyProgress(); // 0.0 (Easy) -> 1.0 (Hard)
+                currentMinInterval = Mathf.Lerp(minSpawnInterval, minSpawnInterval * 0.5f, progress);
+                currentMaxInterval = Mathf.Lerp(maxSpawnInterval, maxSpawnInterval * 0.6f, progress);
+            }
+
+            float waitTime = Random.Range(currentMinInterval, currentMaxInterval);
             yield return new WaitForSeconds(waitTime);
 
             // プレイ中以外は生成を中断
@@ -77,8 +88,7 @@ public class CustomerSpawner : MonoBehaviour
         if (emptyIndices.Count == 0)
             return -1;
 
-        int randomIndex = Random.Range(0, emptyIndices.Count);
-        return emptyIndices[randomIndex];
+        return emptyIndices[Random.Range(0, emptyIndices.Count)];
     }
 
     // 客の生成と移動
@@ -100,11 +110,18 @@ public class CustomerSpawner : MonoBehaviour
 
             // パラメーターのランダム設定
             float randomTemp = Random.Range(minTargetTemp, maxTargetTemp);
-            float randomPatience = Random.Range(minPatienceTime, maxPatienceTime);
-            customer.InitializeCustomer(randomTemp, randomPatience);
+            float patience = Random.Range(minPatienceTime, maxPatienceTime);
 
-            // 移動開始：移動中フラグをTrueにしてゲージ減少をストップ
-            customer.SetMovingState(true);
+            // エンドレスモードの場合は進捗に応じて我慢時間を短縮（EASY -> HARD）
+            if (GameManager.Instance != null && GameManager.Instance.CurrentMode == "ENDLESS")
+            {
+                float progress = GameManager.Instance.GetEndlessDifficultyProgress();
+                patience = Mathf.Lerp(maxPatienceTime, minPatienceTime * 0.7f, progress);
+            }
+
+            customer.InitializeCustomer(randomTemp, patience);
+
+            customer.SetMovingState(true); // 移動開始：移動中フラグをTrueにしてゲージ減少をストップ
 
             // DOTweenでカウンター位置へ移動
             customer.transform.DOMove(targetSeat.position, moveDuration)
