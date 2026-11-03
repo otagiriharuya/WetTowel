@@ -20,7 +20,6 @@ public class InitApp : MonoBehaviour
 
     private void Awake()
     {
-        // 複数生成防止
         Application.targetFrameRate = targetFrameRate;
         ApplyPlatformSettings(); // 解像度・画面向きの設定
     }
@@ -30,7 +29,7 @@ public class InitApp : MonoBehaviour
         LoadFirstScene(); // 最初のシーンへ遷移
     }
 
-    // プラットフォームに応じた解像度・画面向きの設定
+    // プラットフォームに応じた解像度・画面向きを設定
     private void ApplyPlatformSettings()
     {
 #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
@@ -48,7 +47,7 @@ public class InitApp : MonoBehaviour
 #endif
     }
 
-    // プラットフォームに応じた最初のシーンへ遷移
+    // プラットフォームに応じた初期シーンをロード
     private void LoadFirstScene()
     {
         string targetScene = "";

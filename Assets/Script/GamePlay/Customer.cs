@@ -2,7 +2,7 @@
 using UnityEngine.UI;
 using DG.Tweening;
 
-// 提供時の評価定義
+// おしぼり提供時の評価定義
 public enum CustomerEvaluation
 {
     // 誤差は難易度により推移
@@ -68,12 +68,10 @@ public class Customer : MonoBehaviour
 
         // 我慢限界（ゲージ0）になった時の処理
         if (_currentPatienceTime <= 0f)
-        {
             OnPatienceTimeout();
-        }
     }
 
-    // 難易度に応じた判定範囲の調整
+    // 難易度設定に応じた判定閾値を動的に変更
     private void ApplyDifficultySettings()
     {
         string diff = GameManager.Instance != null ? GameManager.Instance.CurrentDifficulty : "NORMAL";
@@ -98,13 +96,13 @@ public class Customer : MonoBehaviour
         }
     }
 
-    // 移動状態の切り替え
+    // 移動状態の設定
     public void SetMovingState(bool isMoving)
     {
         _isMoving = isMoving;
     }
 
-    // 我慢ゲージUIの表示更新
+    // 我慢ゲージUIの量および色を更新
     private void UpdatePatienceUI()
     {
         if (patienceBarImage != null)
@@ -123,7 +121,7 @@ public class Customer : MonoBehaviour
         }
     }
 
-    // 客に初期化パラメータをセットする処理
+    // 客の要求パラメータ（要求温度・我慢時間）を初期化
     public void InitializeCustomer(float targetTemp, float patienceTime)
     {
         targetTemperature = Mathf.Clamp(targetTemp, 0f, 100f);
@@ -139,7 +137,7 @@ public class Customer : MonoBehaviour
             Debug.Log($"<color=cyan>【客登場】</color> 要求温度: {targetTemperature:F1} ℃ | 我慢時間: {maxPatienceTime} 秒");
     }
 
-    // 要求温度のテキスト・アイコン色を自動更新するメソッド
+    // 要求温度のテキストおよびアイコンカラーを更新
     private void UpdateTargetTempVisual()
     {
         // テキスト（数値）の表示更新
@@ -172,7 +170,7 @@ public class Customer : MonoBehaviour
         }
     }
 
-    // おしぼりを受け取った時の判定・処理
+    // 提供されたおしぼりを受け取り、評価判定・スコア計算
     public void ServeWetTowel(WetTowel wetTowel)
     {
         // 提出済み、移動中は受取らない
@@ -192,9 +190,7 @@ public class Customer : MonoBehaviour
                     .OnComplete(() =>
                     {
                         if (wetTowel != null)
-                        {
                             Destroy(wetTowel.gameObject); // ここでおしぼりを削除
-                        }
                     });
         }
 
@@ -235,9 +231,13 @@ public class Customer : MonoBehaviour
         // 我慢ゲージ残量によるスコア倍率計算
         float multiplier = 1.0f;
         if (PatienceRatio >= 0.7f)
+        {
             multiplier = 1.5f; // 素早い提供ボーナス
+        }
         else if (PatienceRatio < 0.3f)
+        {
             multiplier = 0.8f; // ギリギリ提供補正
+        }
 
         int finalScore = Mathf.RoundToInt(baseScore * multiplier);
         
@@ -246,7 +246,7 @@ public class Customer : MonoBehaviour
         PlayExitAnimation(eval != CustomerEvaluation.Miss);
     }
 
-    // 評価結果の処理
+    // 評価結果をログ出力し、GameManagerへ通知
     private void ProcessEvaluation(CustomerEvaluation eval, int baseScore, int finalScore)
     {
         if (showDebugLog)
@@ -262,7 +262,7 @@ public class Customer : MonoBehaviour
         }
     }
 
-    // タイムアウト怒り退場
+    // 我慢限界による退場処理
     private void OnPatienceTimeout()
     {
         if (_isServed)
@@ -282,7 +282,7 @@ public class Customer : MonoBehaviour
         PlayExitAnimation(false);
     }
 
-    // 退場アニメーション（DOTween）
+    // 満足・怒りに応じた退場アニメーションを再生
     private void PlayExitAnimation(bool isHappy)
     {
         transform.DOKill();

@@ -32,7 +32,7 @@ public class SceneNavigator : MonoBehaviour
         LoadScene(IsMobilePlatform() ? mobileGameScene : winGameScene);
     }
 
-    // 任意のシーンへロード
+    // 指定されたシーン名へ非同期ロード（LoadingScreenManager経由）で移動
     public void LoadScene(string sceneName)
     {
         if (string.IsNullOrEmpty(sceneName))
@@ -45,12 +45,11 @@ public class SceneNavigator : MonoBehaviour
         if (showDebugLog)
             Debug.Log($"<color=green>【シーン遷移】</color> ロード画面を挟んで '{sceneName}' へ遷移します。");
 
-        // ロード画面シーンを経由して非同期ロードを開始
-        LoadingScreenManager.LoadScene(sceneName);
+        LoadingScreenManager.LoadScene(sceneName); // ロード画面シーンを経由して非同期ロードを開始
     }
 
-    // モバイルプラットフォーム判定用ヘルパー
-    private bool IsMobilePlatform()
+    // 実行環境がモバイル端末かを判定
+    private static bool IsMobilePlatform()
     {
 #if UNITY_ANDROID || UNITY_IOS
         return true;
