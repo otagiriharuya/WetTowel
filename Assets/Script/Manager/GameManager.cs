@@ -19,9 +19,6 @@ public class GameManager : MonoBehaviour
     [SerializeField] private float maxTime = 99f; // 制限時間の最大値（上限を設定してオーバーフロー防止）
     [SerializeField] private int targetScoreForTimeAttack = 5000; // タイムアタックの目標スコア
 
-    [SerializeField] private int warmerUnlockScore = 3000; // 保温庫2個目の解放スコア
-    [SerializeField] private int coolerUnlockScore = 7000; // 保冷庫2個目の解放スコア
-
     [SerializeField] private bool showDebugLog = true; // デバッグログの表示切り替え
 
     // 現在の選択設定
@@ -32,10 +29,17 @@ public class GameManager : MonoBehaviour
     private float _currentTime;
     private int _currentScore;
     private int _comboCount;
+    private int _maxComboCount; // 最大コンボ数
     private int _missCount; // エンドレス用ミス回数
     private float _elapsedTimeForTimeAttack; // タイムアタック用経過時間
-    private float _playTimer; // プレイ経過時間（エンドレスの難易度上昇用など）
+    private float _playTimer; // プレイ経過時間
     private GameState _currentState = GameState.Ready;
+
+    // 接客結果集計用
+    private int _perfectCount;
+    private int _greatCount;
+    private int _goodCount;
+    private int _standardMissCount;
 
     // UIや他システムへ更新を伝えるイベントアクション
     public event Action<float> OnTimeChanged; // 時間変化時 (残り時間)
@@ -48,11 +52,18 @@ public class GameManager : MonoBehaviour
     public float CurrentTime => _currentTime;
     public int CurrentScore => _currentScore;
     public int ComboCount => _comboCount;
+    public int MaxComboCount => _maxComboCount;
     public int MissCount => _missCount;
     public string CurrentMode => _currentMode;
     public string CurrentDifficulty => _currentDifficulty;
     public GameState CurrentState => _currentState;
     public float ElapsedTimeForTimeAttack => _elapsedTimeForTimeAttack;
+
+    // 集計結果プロパティ
+    public int PerfectCount => _perfectCount;
+    public int GreatCount => _greatCount;
+    public int GoodCount => _goodCount;
+    public int StandardMissCount => _standardMissCount;
 
     private void Awake()
     {
@@ -73,9 +84,7 @@ public class GameManager : MonoBehaviour
 
         // タイムアタック・スコアアタックはハード固定仕様の二重担保
         if (_currentMode == "TIME ATTACK" || _currentMode == "SCORE ATTACK")
-        {
             _currentDifficulty = "HARD";
-        }
     }
 
     private void Start()
@@ -147,7 +156,12 @@ public class GameManager : MonoBehaviour
         Time.timeScale = 1.0f; // 時間の再開
         _currentScore = 0;
         _comboCount = 0;
+        _maxComboCount = 0;
         _missCount = 0;
+        _perfectCount = 0;
+        _greatCount = 0;
+        _goodCount = 0;
+        _standardMissCount = 0;
         _elapsedTimeForTimeAttack = 0f;
         _playTimer = 0f;
         _currentState = GameState.Playing;
@@ -188,24 +202,42 @@ public class GameManager : MonoBehaviour
         if (_currentState != GameState.Playing)
             return;
 
-        // コンボ・ミス計算
-        if (eval == CustomerEvaluation.Perfect || eval == CustomerEvaluation.Great)
+        // 【集計】判定ごとの客の人数をカウント
+        switch (eval)
         {
-            _comboCount++;
-        }
-        else if (eval == CustomerEvaluation.Miss)
-        {
-            _comboCount = 0;
-            _missCount++;
-            OnMissChanged?.Invoke(_missCount);
+            case CustomerEvaluation.Perfect:
+                _perfectCount++;
+                _comboCount++;
+                break;
+            case CustomerEvaluation.Great:
+                _greatCount++;
+                _comboCount++;
+                break;
+            case CustomerEvaluation.Good:
+                _goodCount++;
+                _comboCount = 0; // Goodではコンボ途切れる仕様、または維持にしたい場合は調整可能
+                break;
+            case CustomerEvaluation.Miss:
+                _comboCount = 0;
+                _missCount++;
+                _standardMissCount++;
+                OnMissChanged?.Invoke(_missCount);
 
-            // エンドレスモードでミス3回に達した場合の終了判定
-            if (_currentMode == "ENDLESS" && _missCount >= 3)
-            {
-                EndGame(false);
-                return;
-            }
+                // エンドレスモードでミス3回に達した場合の終了判定
+                if (_currentMode == "ENDLESS" && _missCount >= 3)
+                {
+                    EndGame(false);
+                    return;
+                }
+                break;
         }
+
+        // 最大コンボ数の更新
+        if (_comboCount > _maxComboCount)
+        {
+            _maxComboCount = _comboCount;
+        }
+
         OnComboChanged?.Invoke(_comboCount);
 
         // スコア加算
@@ -259,6 +291,7 @@ public class GameManager : MonoBehaviour
         OnScoreChanged?.Invoke(_currentScore);
 
         _missCount++;
+        _standardMissCount++;
         OnMissChanged?.Invoke(_missCount);
 
         if (_currentMode == "ENDLESS" && _missCount >= 3)
@@ -306,11 +339,5 @@ public class GameManager : MonoBehaviour
 
         if (showDebugLog)
             Debug.LogWarning($"<color=red>【ゲーム終了】</color> 状態: {_currentState} | スコア: {_currentScore}");
-    }
-
-    // スコアに応じた要素解放のチェック（機械枠の増設など）
-    private void CheckUnlockThresholds()
-    {
-
     }
 }

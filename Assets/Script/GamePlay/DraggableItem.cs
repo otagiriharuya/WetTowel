@@ -50,16 +50,17 @@ public class DraggableItem : MonoBehaviour, IPointerDownHandler, IBeginDragHandl
 
         _startPosition = transform.position; // 初期位置を記憶
 
-        // タッチ位置をワールド座標に変換して、クリック位置と中心のズレを計算
-        Vector3 mouseWorldPos = GetMouseWorldPosition(eventData.position);
-        _dragOffset = transform.position - mouseWorldPos;
-
         // すでに機械枠にセットされていた場合は、枠の占有を解除（温度変化などを停止）
         if (_currentMountedTarget != null)
         {
             _currentMountedTarget.ReleaseWetTowel();
             _currentMountedTarget = null;
         }
+
+        // マウスのワールド位置を取得し、掴んだ瞬間にオブジェクトの中心をマウス位置に合わせる
+        Vector3 mouseWorldPos = GetMouseWorldPosition(eventData.position, eventData.pressEventCamera);
+        transform.position = mouseWorldPos; // おしぼりの中心をマウス位置にスナップ
+        _dragOffset = Vector3.zero;
 
         if (showDebugLog)
             Debug.Log($"<color=cyan>[ドラッグ開始]</color> {gameObject.name} | 開始位置: {_startPosition}");
@@ -69,7 +70,7 @@ public class DraggableItem : MonoBehaviour, IPointerDownHandler, IBeginDragHandl
     public void OnDrag(PointerEventData eventData)
     {
         // 現在のタッチ位置にオフセットを加えてオブジェクトの位置を更新
-        Vector3 currentMouseWorldPos = GetMouseWorldPosition(eventData.position);
+        Vector3 currentMouseWorldPos = GetMouseWorldPosition(eventData.position, eventData.pressEventCamera);
         transform.position = currentMouseWorldPos + _dragOffset;
     }
 
@@ -108,9 +109,7 @@ public class DraggableItem : MonoBehaviour, IPointerDownHandler, IBeginDragHandl
                 Customer customer = target.GetComponent<Customer>();
                 // 移動中・提供済みでない有効な客のみを対象とする
                 if (customer != null && !customer.IsMoving && !customer.IsServed)
-                {
                     candidateCustomers.Add(customer);
-                }
             }
 
             // 客が1名以上候補にいる場合：温度誤差が一番少ない客を最優先で選択
@@ -133,9 +132,7 @@ public class DraggableItem : MonoBehaviour, IPointerDownHandler, IBeginDragHandl
                 {
                     selectedTarget = bestCustomer.GetComponent<DropTarget>();
                     if (showDebugLog && candidateCustomers.Count > 1)
-                    {
                         Debug.Log($"<color=cyan>【賢い提供判定】</color> 重なった {candidateCustomers.Count} 名の中から最も適した客 (要求:{bestCustomer.TargetTemperature:F1}℃ / 誤差:{minTempDiff:F1}℃) を自動選択しました。");
-                    }
                 }
             }
 
@@ -170,9 +167,7 @@ public class DraggableItem : MonoBehaviour, IPointerDownHandler, IBeginDragHandl
 
         // ドロップ失敗（何もない場所で離した / 枠が埋まっていた / 提供不可）場合の復帰・破棄処理
         if (!success)
-        {
             HandleDropFailure();
-        }
     }
 
     // ドロップ失敗時の挙動制御
@@ -223,15 +218,16 @@ public class DraggableItem : MonoBehaviour, IPointerDownHandler, IBeginDragHandl
     }
 
     // 画面のスクリーン座標（ピクセル）をゲーム空間のワールド座標へ変換する処理
-    private Vector3 GetMouseWorldPosition(Vector2 screenPosition)
+    private Vector3 GetMouseWorldPosition(Vector2 screenPosition, Camera eventCamera)
     {
         if (_mainCamera == null)
             return transform.position;
 
+        Camera cam = eventCamera != null ? eventCamera : _mainCamera;
+
         // カメラの奥行き（Z軸）を考慮して2D空間上の位置を計算
-        Vector3 point = new Vector3(screenPosition.x, screenPosition.y, Mathf.Abs(_mainCamera.transform.position.z));
-        Vector3 worldPos = _mainCamera.ScreenToWorldPoint(point);
-        worldPos.z = transform.position.z; // Z軸（奥行き）を維持
+        Vector3 worldPos = cam.ScreenToWorldPoint(new Vector3(screenPosition.x, screenPosition.y, Mathf.Abs(cam.transform.position.z - transform.position.z)));
+        worldPos.z = transform.position.z; // Z軸を維持
         return worldPos;
     }
 

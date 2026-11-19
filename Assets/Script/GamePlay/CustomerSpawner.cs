@@ -1,28 +1,27 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using DG.Tweening;
 
 public class CustomerSpawner : MonoBehaviour
 {
-    [SerializeField] private GameObject customerPrefab;  // ‹q‚ÌƒvƒŒƒnƒu
-    [SerializeField] private Transform spawnPoint; // ‹q‚ª¶¬‚³‚ê‚é‰ŠúˆÊ’u
-    [SerializeField] private Transform[] counterSeats; // ‹q‚ª’…È‚·‚éƒJƒEƒ“ƒ^[ˆÊ’u
+    [SerializeField] private GameObject customerPrefab;  // å®¢ã®ãƒ—ãƒ¬ãƒãƒ–
+    [SerializeField] private Transform spawnPoint; // å®¢ãŒç”Ÿæˆã•ã‚Œã‚‹åˆæœŸä½ç½®
+    [SerializeField] private Transform[] counterSeats; // å®¢ãŒç€å¸­ã™ã‚‹ã‚«ã‚¦ãƒ³ã‚¿ãƒ¼ä½ç½®
 
-    [SerializeField] private float minSpawnInterval = 3f; // Ÿ‚Ì‹q‚ª—ˆ‚éÅ¬ŠÔi•bj
-    [SerializeField] private float maxSpawnInterval = 6f; // Ÿ‚Ì‹q‚ª—ˆ‚éÅ‘åŠÔi•bj
+    [SerializeField] private float baseMinSpawnInterval = 3f; // æ¬¡ã®å®¢ãŒæ¥ã‚‹æœ€å°æ™‚é–“ï¼ˆç§’ï¼‰
+    [SerializeField] private float baseMaxSpawnInterval = 6f; // æ¬¡ã®å®¢ãŒæ¥ã‚‹æœ€å¤§æ™‚é–“ï¼ˆç§’ï¼‰
+    [SerializeField] private float baseMoveDuration = 1.2f; // ç§»å‹•æ™‚é–“ï¼ˆç§’ï¼‰
 
-    [SerializeField] private float minTargetTemp = 20f; // Å’á—v‹‰·“x
-    [SerializeField] private float maxTargetTemp = 85f; // Å‚—v‹‰·“x
-    [SerializeField] private float minPatienceTime = 10f; // Å’Z‰ä–ŠÔ
-    [SerializeField] private float maxPatienceTime = 20f; // Å’·‰ä–ŠÔ
+    [SerializeField] private float minTargetTemp = 20f; // æœ€ä½è¦æ±‚æ¸©åº¦
+    [SerializeField] private float maxTargetTemp = 85f; // æœ€é«˜è¦æ±‚æ¸©åº¦
+    [SerializeField] private float minPatienceTime = 10f; // æœ€çŸ­æˆ‘æ…¢æ™‚é–“
+    [SerializeField] private float maxPatienceTime = 20f; // æœ€é•·æˆ‘æ…¢æ™‚é–“
 
-    [SerializeField] private float moveDuration = 1.2f; // ’…ÈˆÊ’u‚Ü‚Å‚ÌˆÚ“®ŠÔi•bj
+    [SerializeField] private bool showDebugLog = true; // ãƒ‡ãƒãƒƒã‚°ãƒ­ã‚°ã®è¡¨ç¤ºåˆ‡ã‚Šæ›¿ãˆ
 
-    [SerializeField] private bool showDebugLog = true; // ƒfƒoƒbƒOƒƒO‚Ì•\¦Ø‚è‘Ö‚¦
-
-    // ŠeÈ‚ÉŒ»İ•À‚ñ‚Å‚¢‚é‹q‚ğŠÇ—
-    private Customer[] _seatOccupants;
+    private Customer[] _seatOccupants; // å„å¸­ã«ç¾åœ¨ä¸¦ã‚“ã§ã„ã‚‹å®¢ã‚’ç®¡ç†
+    private bool _isFirstSpawn = true; // æœ€åˆã®ç”Ÿæˆã‹ã©ã†ã‹ã‚’ç®¡ç†ã™ã‚‹ãƒ•ãƒ©ã‚°
 
     private void Start()
     {
@@ -31,34 +30,48 @@ public class CustomerSpawner : MonoBehaviour
             _seatOccupants = new Customer[counterSeats.Length];
         }
 
-        StartCoroutine(SpawnLoop()); // ƒXƒ|[ƒ“ƒ‹[ƒv‚ğŠJn
+        StartCoroutine(SpawnLoop()); // ã‚¹ãƒãƒ¼ãƒ³ãƒ«ãƒ¼ãƒ—ã‚’é–‹å§‹
     }
 
     private IEnumerator SpawnLoop()
     {
         while (true)
         {
-            // ƒ‚[ƒh‚â“ïˆÕ“x‚É‰‚¶‚½“®“I‚ÈƒXƒ|[ƒ“ŠÔŠu‚Ì’²®
-            float currentMinInterval = minSpawnInterval;
-            float currentMaxInterval = maxSpawnInterval;
+            float waitTime;
 
-            if (GameManager.Instance != null && GameManager.Instance.CurrentMode == "ENDLESS")
+            // æœ€åˆã®ç”Ÿæˆæ™‚ã¯å¾…ã¡æ™‚é–“ã‚’ã»ã¼ã‚¼ãƒ­ï¼ˆ0.2ç§’ã€œ0.5ç§’ç¨‹åº¦ï¼‰ã«ã—ã¦ã™ãã«å®¢ã‚’å‘¼ã³å‡ºã™
+            if (_isFirstSpawn)
             {
-                float progress = GameManager.Instance.GetEndlessDifficultyProgress(); // 0.0 (Easy) -> 1.0 (Hard)
-                currentMinInterval = Mathf.Lerp(minSpawnInterval, minSpawnInterval * 0.5f, progress);
-                currentMaxInterval = Mathf.Lerp(maxSpawnInterval, maxSpawnInterval * 0.6f, progress);
+                waitTime = Random.Range(0.2f, 0.5f);
+                _isFirstSpawn = false;
+            }
+            else
+            {
+                // é›£æ˜“åº¦ã‚„ãƒ¢ãƒ¼ãƒ‰ã«å¿œã˜ãŸå‹•çš„ãªã‚¹ãƒãƒ¼ãƒ³é–“éš”ã®èª¿æ•´
+                float intervalMultiplier = GetDifficultyIntervalMultiplier();
+                float currentMinInterval = baseMinSpawnInterval * intervalMultiplier;
+                float currentMaxInterval = baseMaxSpawnInterval * intervalMultiplier;
+
+                // ã‚¨ãƒ³ãƒ‰ãƒ¬ã‚¹ãƒ¢ãƒ¼ãƒ‰ã®è¿½åŠ è£œæ­£
+                if (GameManager.Instance != null && GameManager.Instance.CurrentMode == "ENDLESS")
+                {
+                    float progress = GameManager.Instance.GetEndlessDifficultyProgress(); // 0.0 -> 1.0
+                    currentMinInterval = Mathf.Lerp(currentMinInterval, currentMinInterval * 0.5f, progress);
+                    currentMaxInterval = Mathf.Lerp(currentMaxInterval, currentMaxInterval * 0.6f, progress);
+                }
+
+                waitTime = Random.Range(currentMinInterval, currentMaxInterval);
             }
 
-            float waitTime = Random.Range(currentMinInterval, currentMaxInterval);
             yield return new WaitForSeconds(waitTime);
 
-            // ƒvƒŒƒC’†ˆÈŠO‚Í¶¬‚ğ’†’f
+            // ãƒ—ãƒ¬ã‚¤ä¸­ä»¥å¤–ã¯ç”Ÿæˆã‚’ä¸­æ–­
             if (GameManager.Instance != null && GameManager.Instance.CurrentState != GameState.Playing)
             {
                 continue;
             }
 
-            // ‹ó‚¢‚Ä‚¢‚éÈ‚ğ’T‚·
+            // ç©ºã„ã¦ã„ã‚‹å¸­ã‚’æ¢ã™
             int emptySeatIndex = GetRandomEmptySeatIndex();
             if (emptySeatIndex != -1)
             {
@@ -66,19 +79,47 @@ public class CustomerSpawner : MonoBehaviour
             }
             else if (showDebugLog)
             {
-                Debug.Log("<color=gray>[ƒXƒ|ƒi[]</color> È‚ª–È‚Ì‚½‚ß‹q‚Ì¶¬‚ğƒXƒLƒbƒv‚µ‚Ü‚µ‚½B");
+                Debug.Log("<color=gray>[ã‚¹ãƒãƒŠãƒ¼]</color> å¸­ãŒæº€å¸­ã®ãŸã‚å®¢ã®ç”Ÿæˆã‚’ã‚¹ã‚­ãƒƒãƒ—ã—ã¾ã—ãŸã€‚");
             }
         }
     }
 
-    // ƒ‰ƒ“ƒ_ƒ€‚É‹ó‚«È‚ÌƒCƒ“ƒfƒbƒNƒX‚ğæ“¾
+    // é›£æ˜“åº¦ã«å¿œã˜ãŸç”Ÿæˆé–“éš”ã®å€ç‡ã‚’å–å¾—
+    private float GetDifficultyIntervalMultiplier()
+    {
+        if (GameManager.Instance == null)
+            return 1.0f;
+
+        string diff = GameManager.Instance.CurrentDifficulty;
+        if (diff == "EASY")
+            return 1.3f; // ç”Ÿæˆé–“éš”ã‚’å°‘ã—åºƒã’ã‚‹ï¼ˆã‚†ã£ãã‚Šï¼‰
+        if (diff == "HARD")
+            return 0.7f; // ç”Ÿæˆé–“éš”ã‚’çŸ­ãã™ã‚‹ï¼ˆãƒã‚¤ãƒšãƒ¼ã‚¹ï¼‰
+        return 1.0f; // NORMAL
+    }
+
+    // é›£æ˜“åº¦ã«å¿œã˜ãŸç§»å‹•æ™‚é–“ã®å€ç‡ã‚’å–å¾—ï¼ˆHARDã»ã©ç§»å‹•é€Ÿåº¦ãŒé€Ÿã„ï¼æ™‚é–“ãŒçŸ­ã„ï¼‰
+    private float GetDifficultyMoveDuration()
+    {
+        if (GameManager.Instance == null)
+            return baseMoveDuration;
+
+        string diff = GameManager.Instance.CurrentDifficulty;
+        if (diff == "EASY")
+            return baseMoveDuration * 1.2f;
+        if (diff == "HARD")
+            return baseMoveDuration * 0.75f;
+        return baseMoveDuration;
+    }
+
+    // ãƒ©ãƒ³ãƒ€ãƒ ã«ç©ºãå¸­ã®ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ã‚’å–å¾—
     private int GetRandomEmptySeatIndex()
     {
         List<int> emptyIndices = new List<int>();
 
         for (int i = 0; i < counterSeats.Length; i++)
         {
-            // QÆ‚ªNullA‚Ü‚½‚ÍDestroyÏ‚İ‚Ìê‡‚Í‹ó‚«È‚Æ”»’è
+            // å‚ç…§ãŒNullã€ã¾ãŸã¯Destroyæ¸ˆã¿ã®å ´åˆã¯ç©ºãå¸­ã¨åˆ¤å®š
             if (_seatOccupants[i] == null)
             {
                 emptyIndices.Add(i);
@@ -91,7 +132,7 @@ public class CustomerSpawner : MonoBehaviour
         return emptyIndices[Random.Range(0, emptyIndices.Count)];
     }
 
-    // ‹q‚Ì¶¬‚ÆˆÚ“®
+    // å®¢ã®ç”Ÿæˆã¨ç§»å‹•
     private void SpawnCustomer(int seatIndex)
     {
         if (customerPrefab == null || spawnPoint == null)
@@ -100,7 +141,7 @@ public class CustomerSpawner : MonoBehaviour
         Vector3 spawnPos = spawnPoint.position;
         Transform targetSeat = counterSeats[seatIndex];
 
-        // ‹qƒCƒ“ƒXƒ^ƒ“ƒX‚ğ¶¬
+        // å®¢ã‚¤ãƒ³ã‚¹ã‚¿ãƒ³ã‚¹ã‚’ç”Ÿæˆ
         GameObject customerObj = Instantiate(customerPrefab, spawnPos, Quaternion.identity);
         Customer customer = customerObj.GetComponent<Customer>();
 
@@ -108,11 +149,11 @@ public class CustomerSpawner : MonoBehaviour
         {
             _seatOccupants[seatIndex] = customer;
 
-            // ƒpƒ‰ƒ[ƒ^[‚Ìƒ‰ƒ“ƒ_ƒ€İ’è
+            // ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿ãƒ¼ã®ãƒ©ãƒ³ãƒ€ãƒ è¨­å®š
             float randomTemp = Random.Range(minTargetTemp, maxTargetTemp);
             float patience = Random.Range(minPatienceTime, maxPatienceTime);
 
-            // ƒGƒ“ƒhƒŒƒXƒ‚[ƒh‚Ìê‡‚Íi’»‚É‰‚¶‚Ä‰ä–ŠÔ‚ğ’ZkiEASY -> HARDj
+            // ã‚¨ãƒ³ãƒ‰ãƒ¬ã‚¹ãƒ¢ãƒ¼ãƒ‰ã®å ´åˆã¯é€²æ—ã«å¿œã˜ã¦æˆ‘æ…¢æ™‚é–“ã‚’çŸ­ç¸®ï¼ˆEASY -> HARDï¼‰
             if (GameManager.Instance != null && GameManager.Instance.CurrentMode == "ENDLESS")
             {
                 float progress = GameManager.Instance.GetEndlessDifficultyProgress();
@@ -121,14 +162,16 @@ public class CustomerSpawner : MonoBehaviour
 
             customer.InitializeCustomer(randomTemp, patience);
 
-            customer.SetMovingState(true); // ˆÚ“®ŠJnFˆÚ“®’†ƒtƒ‰ƒO‚ğTrue‚É‚µ‚ÄƒQ[ƒWŒ¸­‚ğƒXƒgƒbƒv
+            customer.SetMovingState(true); // ç§»å‹•é–‹å§‹ï¼šç§»å‹•ä¸­ãƒ•ãƒ©ã‚°ã‚’Trueã«ã—ã¦ã‚²ãƒ¼ã‚¸æ¸›å°‘ã‚’ã‚¹ãƒˆãƒƒãƒ—
 
-            // DOTween‚ÅƒJƒEƒ“ƒ^[ˆÊ’u‚ÖˆÚ“®
+            float moveDuration = GetDifficultyMoveDuration(); // é›£æ˜“åº¦ã«å¿œã˜ãŸç§»å‹•é€Ÿåº¦ï¼ˆdurationï¼‰ã‚’é©ç”¨
+
+            // DOTweenã§ã‚«ã‚¦ãƒ³ã‚¿ãƒ¼ä½ç½®ã¸ç§»å‹•
             customer.transform.DOMove(targetSeat.position, moveDuration)
                 .SetEase(Ease.OutCubic)
                 .OnComplete(() =>
                 {
-                    // ’…ÈŠ®—¹FˆÚ“®’†ƒtƒ‰ƒO‚ğFalse‚É‚µ‚ÄƒQ[ƒWŒ¸­•’ñ‹Ÿó•t‚ğƒXƒ^[ƒg
+                    // ç€å¸­å®Œäº†ï¼šç§»å‹•ä¸­ãƒ•ãƒ©ã‚°ã‚’Falseã«ã—ã¦ã‚²ãƒ¼ã‚¸æ¸›å°‘ï¼†æä¾›å—ä»˜ã‚’ã‚¹ã‚¿ãƒ¼ãƒˆ
                     if (customer != null)
                     {
                         customer.SetMovingState(false);
@@ -136,7 +179,7 @@ public class CustomerSpawner : MonoBehaviour
                 });
 
             if (showDebugLog)
-                Debug.Log($"<color=cyan>y‹q‚Ì—ˆ“Xz</color> È[{seatIndex}] ‚ÉˆÚ“®ŠJniˆÚ“®ŠÔ: {moveDuration}•bj");
+                Debug.Log($"<color=cyan>ã€å®¢ã®æ¥åº—ã€‘</color> å¸­[{seatIndex}] ã«ç§»å‹•é–‹å§‹ï¼ˆç§»å‹•æ™‚é–“: {moveDuration}ç§’ï¼‰");
         }
     }
 }

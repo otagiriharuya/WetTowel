@@ -9,9 +9,19 @@ public class UIManager : MonoBehaviour
     [SerializeField] private Text scoreText; // スコアテキスト
     [SerializeField] private Text comboText; // コンボテキスト
 
+    [SerializeField] private GameObject centerPopupPanel; // ポップアップ全体のルートパネル
+    [SerializeField] private Text popupEvalText; // 評価テキスト
+    [SerializeField] private Text popupBonusText; // ボーナス率テキスト
+    [SerializeField] private Text popupScoreText; // 獲得スコアテキスト
+
     [SerializeField] private GameObject resultPanel; // リザルト全体パネル
+    [SerializeField] private Text resultTitleText; // リザルトタイトル
+    [SerializeField] private Text detailStatsText; // 詳細集計用テキスト（パーフェクト数、ミス数、コンボ数など）
     [SerializeField] private Text finalScoreText; // 最終スコアテキスト
     [SerializeField] private Text highScoreText; // ハイスコアテキスト
+    [SerializeField] private Transform starContainer;  // 星（★）を並べる親トランスフォーム
+    [SerializeField] private GameObject starIconPrefab;// 星のUI
+    [SerializeField] private Text totalStarsCountText; // 星獲得総数テキスト
     [SerializeField] private Button restartButton; // リスタートボタン
     [SerializeField] private Button titleButton; // タイトルへ戻るボタン
 
@@ -24,6 +34,22 @@ public class UIManager : MonoBehaviour
     [SerializeField] private bool showDebugLog = true; // デバッグログの表示切り替え
 
     private int _lastDisplayedTime = -1; // 不要なテキスト更新を減らすための保持変数
+    private Tween _popupTween; // ポップアップアニメーションの重複制御用
+
+    public static UIManager Instance { get; private set; }
+
+    private void Awake()
+    {
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+        else
+        {
+            Destroy(gameObject);
+            return;
+        }
+    }
 
     private void OnEnable()
     {
@@ -42,8 +68,11 @@ public class UIManager : MonoBehaviour
         if (resultPanel != null)
             resultPanel.SetActive(false);
 
+        // 非表示スタート
         if (comboText != null)
-            comboText.gameObject.SetActive(false); // コンボ非表示からスタート
+            comboText.gameObject.SetActive(false);
+        if (centerPopupPanel != null)
+            centerPopupPanel.SetActive(false);
 
         // ボタンのクリックイベント設定
         if (restartButton != null)
@@ -187,6 +216,66 @@ public class UIManager : MonoBehaviour
         }
     }
 
+    // おしぼり提供時に画面中央へド派手にポップアップを表示する
+    public void ShowEvaluationPopup(Vector3 worldPosition, CustomerEvaluation eval, int bonusPercent, int finalScore)
+    {
+        if (centerPopupPanel == null)
+            return;
+
+        // テキストの流し込み
+        if (popupEvalText != null)
+        {
+            switch (eval)
+            {
+                case CustomerEvaluation.Perfect:
+                    popupEvalText.text = "PERFECT!!";
+                    popupEvalText.color = Color.yellow;
+                    break;
+                case CustomerEvaluation.Great:
+                    popupEvalText.text = "GREAT!";
+                    popupEvalText.color = Color.green;
+                    break;
+                case CustomerEvaluation.Good:
+                    popupEvalText.text = "GOOD";
+                    popupEvalText.color = Color.cyan;
+                    break;
+                case CustomerEvaluation.Miss:
+                    popupEvalText.text = "MISS...";
+                    popupEvalText.color = Color.red;
+                    break;
+            }
+        }
+
+        if (popupBonusText != null)
+        {
+            popupBonusText.text = $"BONUS: {bonusPercent}%";
+        }
+
+        if (popupScoreText != null)
+        {
+            popupScoreText.text = finalScore >= 0 ? $"+{finalScore:N0} pt" : $"{finalScore:N0} pt";
+            popupScoreText.color = finalScore >= 0 ? Color.white : Color.red;
+        }
+
+        // 既存のポップアップ演出アニメーションがあればキルして初期化
+        _popupTween?.Kill();
+        centerPopupPanel.SetActive(true);
+        centerPopupPanel.transform.localScale = Vector3.zero;
+
+        // ド派手なポップアップ＆フェードアウト演出（DOTween）
+        Sequence popSeq = DOTween.Sequence();
+        popSeq.Append(centerPopupPanel.transform.DOScale(Vector3.one * 1.2f, 0.15f).SetEase(Ease.OutBack))
+              .Append(centerPopupPanel.transform.DOScale(Vector3.one, 0.1f))
+              .AppendInterval(0.6f) // 表示を維持する時間
+              .Append(centerPopupPanel.transform.DOScale(Vector3.zero, 0.2f).SetEase(Ease.InBack))
+              .OnComplete(() => centerPopupPanel.SetActive(false));
+
+        _popupTween = popSeq;
+
+        if (showDebugLog)
+            Debug.Log($"<color=magenta>【画面中央演出】</color> 判定: {eval} | ボーナス: {bonusPercent}% | 獲得スコア: {finalScore}pt");
+    }
+
     // ゲーム状態変更（GameOver画面表示）のポップアップ制御
     private void HandleStateChanged(GameState state)
     {
@@ -196,7 +285,7 @@ public class UIManager : MonoBehaviour
         }
     }
 
-    // リザルト画面の表示
+    // モード別専用リザルト画面の組み立てと表示
     private void ShowResultPanel(bool isClear)
     {
         if (resultPanel == null || GameManager.Instance == null)
@@ -208,17 +297,65 @@ public class UIManager : MonoBehaviour
         string diff = GameManager.Instance.CurrentDifficulty;
         string saveKey = $"HighScore_{mode}_{diff}";
 
+        // リザルトタイトルの設定
+        if (resultTitleText != null)
+            resultTitleText.text = $"{mode} RESULT";
+
+        // 星コンテナや合計スターテキストの初期化
+        if (starContainer != null)
+            starContainer.gameObject.SetActive(false);
+        if (totalStarsCountText != null)
+            totalStarsCountText.gameObject.SetActive(false);
+
+        // モードごとの表示分岐
         if (mode == "TIME ATTACK")
         {
             float finalTime = GameManager.Instance.ElapsedTimeForTimeAttack;
             float bestTime = PlayerPrefs.GetFloat(saveKey, 9999f);
 
+            if (detailStatsText != null)
+                detailStatsText.text = $"目標スコア達成！\n素早いおしぼり提供お見事です！";
             if (finalScoreText != null)
                 finalScoreText.text = $"CLEAR TIME\n{finalTime:F2} 秒";
             if (highScoreText != null)
                 highScoreText.text = bestTime <= 9999f ? $"BEST TIME\n{bestTime:F2} 秒" : "BEST TIME\n--.-- 秒";
         }
-        else
+        else if (mode == "STANDARD")
+        {
+            int pCount = GameManager.Instance.PerfectCount;
+            int gCount = GameManager.Instance.GreatCount;
+            int gdCount = GameManager.Instance.GoodCount;
+            int mCount = GameManager.Instance.StandardMissCount;
+            int maxCombo = GameManager.Instance.MaxComboCount;
+            int score = GameManager.Instance.CurrentScore;
+
+            // 詳細な接客結果テキスト
+            if (detailStatsText != null)
+            {
+                detailStatsText.text =
+                    $"PERFECT : {pCount} 人\n" +
+                    $"GREAT   : {gCount} 人\n" +
+                    $"GOOD    : {gdCount} 人\n" +
+                    $"MISS    : {mCount} 人\n" +
+                    $"COMBO   : {maxCombo} コンボ";
+            }
+
+            if (finalScoreText != null)
+                finalScoreText.text = $"TOTAL SCORE\n{score:N0} pt";
+
+            int highScore = PlayerPrefs.GetInt(saveKey, 0);
+            if (highScoreText != null)
+                highScoreText.text = $"HIGH SCORE\n{highScore:N0} pt";
+
+            // スタンダードモード特有の星評価演出を表示
+            if (starContainer != null)
+                starContainer.gameObject.SetActive(true);
+            if (totalStarsCountText != null)
+                totalStarsCountText.gameObject.SetActive(true);
+
+            GenerateRatingStars(pCount, gCount, maxCombo, mCount);
+        }
+        else // SCORE ATTACK / ENDLESS など
         {
             int finalScore = GameManager.Instance.CurrentScore;
             int highScore = PlayerPrefs.GetInt(saveKey, 0);
@@ -238,6 +375,46 @@ public class UIManager : MonoBehaviour
 
         resultPanel.transform.localScale = Vector3.one * 0.8f;
         resultPanel.transform.DOScale(Vector3.one, 0.4f).SetEase(Ease.OutBack).SetUpdate(true);
+    }
+
+    // 星の個数算出と「×個数」の表示、グリッドレイアウトへの動的生成
+    private void GenerateRatingStars(int perfects, int greats, int maxCombo, int misses)
+    {
+        if (starContainer == null || starIconPrefab == null)
+            return;
+
+        // 既存の星をクリア
+        foreach (Transform child in starContainer)
+        {
+            Destroy(child.gameObject);
+        }
+
+        // パーフェクト数、グッド数、最大コンボ数に応じて星が増殖！ミスで少し減点
+        int totalStars = Mathf.Max(1, (perfects * 2) + greats + (maxCombo / 2) - (misses * 2));
+
+        // 星の上や近くに「⭐ × 〇〇」として合計個数を表示
+        if (totalStarsCountText != null)
+        {
+            totalStarsCountText.text = $"× {totalStars}";
+
+            // カウントアップするようなポップ演出
+            totalStarsCountText.transform.localScale = Vector3.zero;
+            totalStarsCountText.transform.DOScale(Vector3.one, 0.4f).SetEase(Ease.OutBack).SetUpdate(true);
+        }
+
+        // 1列10個ずつ綺麗に並べる
+        for (int i = 0; i < totalStars; i++)
+        {
+            GameObject starObj = Instantiate(starIconPrefab, starContainer);
+            starObj.SetActive(true);
+
+            // ポコポコと時間差で飛び出してくる気持ちいいアニメーション
+            starObj.transform.localScale = Vector3.zero;
+            starObj.transform.DOScale(Vector3.one, 0.25f)
+                   .SetDelay(0.1f + (i * 0.03f))
+                   .SetEase(Ease.OutBack)
+                   .SetUpdate(true);
+        }
     }
 
     // リスタートボタンのアクション

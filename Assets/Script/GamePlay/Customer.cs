@@ -39,6 +39,7 @@ public class Customer : MonoBehaviour
     private float _appliedPerfectThreshold;
     private float _appliedGreatThreshold;
     private float _appliedGoodThreshold;
+    private float _difficultyScoreMultiplier = 1.0f; // 難易度倍率
 
     public float TargetTemperature => targetTemperature;
     public float PatienceRatio => Mathf.Clamp01(_currentPatienceTime / maxPatienceTime); // 我慢ゲージ割合 (0.0〜1.0)
@@ -82,16 +83,19 @@ public class Customer : MonoBehaviour
                 _appliedPerfectThreshold = perfectThreshold * 1.6f; // 判定がゆるい (例: ±8)
                 _appliedGreatThreshold = greatThreshold * 1.5f; // (例: ±22.5)
                 _appliedGoodThreshold = goodThreshold * 1.3f; // (例: ±39)
+                _difficultyScoreMultiplier = 0.8f; // スコア加算控えめ
                 break;
             case "HARD":
                 _appliedPerfectThreshold = perfectThreshold * 0.6f; // 判定が厳しい (例: ±3)
                 _appliedGreatThreshold = greatThreshold * 0.7f; // (例: ±10.5)
                 _appliedGoodThreshold = goodThreshold * 0.8f; // (例: ±24)
+                _difficultyScoreMultiplier = 1.5f; // スコア加算大幅
                 break;
             default: // NORMAL
                 _appliedPerfectThreshold = perfectThreshold;
                 _appliedGreatThreshold = greatThreshold;
                 _appliedGoodThreshold = goodThreshold;
+                _difficultyScoreMultiplier = 1.0f;
                 break;
         }
     }
@@ -142,9 +146,7 @@ public class Customer : MonoBehaviour
     {
         // テキスト（数値）の表示更新
         if (tempText != null)
-        {
             tempText.text = $"{Mathf.RoundToInt(targetTemperature)}℃";
-        }
 
         // 温度に応じたグラデーションカラーの計算
         Color calculatedColor;
@@ -161,13 +163,9 @@ public class Customer : MonoBehaviour
 
         // アイコンや吹き出しの色を変えて直感的にする
         if (tempIconSprite != null)
-        {
             tempIconSprite.color = calculatedColor;
-        }
         if (tempText != null)
-        {
             tempText.color = Color.black;
-        }
     }
 
     // 提供されたおしぼりを受け取り、評価判定・スコア計算
@@ -197,7 +195,7 @@ public class Customer : MonoBehaviour
         // 失敗作チェック（焦げ・カチコチ）
         if (wetTowel.CurrentState != WetTowelState.Normal)
         {
-            ProcessEvaluation(CustomerEvaluation.Miss, 0, -200);
+            ProcessEvaluation(CustomerEvaluation.Miss, 0, 0, -200);
             PlayExitAnimation(false);
             return;
         }
@@ -229,30 +227,49 @@ public class Customer : MonoBehaviour
         }
 
         // 我慢ゲージ残量によるスコア倍率計算
-        float multiplier = 1.0f;
+        float timeMultiplier = 1.0f;
         if (PatienceRatio >= 0.7f)
         {
-            multiplier = 1.5f; // 素早い提供ボーナス
+            timeMultiplier = 2.0f; // 素早い提供
         }
         else if (PatienceRatio < 0.3f)
         {
-            multiplier = 0.8f; // ギリギリ提供補正
+            timeMultiplier = 0.8f; // ギリギリ提供補正
         }
 
-        int finalScore = Mathf.RoundToInt(baseScore * multiplier);
-        
+        // コンボ倍率の計算
+        // 現在のコンボ数に応じて倍率を加算
+        float comboMultiplier = 1.0f;
+        if (GameManager.Instance != null && GameManager.Instance.ComboCount > 0)
+        {
+            float bonusPerCombo = 0.2f; // 1コンボにつき +20% 加算
+            comboMultiplier = Mathf.Min(20.0f, 1.0f + (GameManager.Instance.ComboCount * bonusPerCombo));
+        }
+
+        // 総合ボーナス率
+        float totalMultiplier = timeMultiplier * _difficultyScoreMultiplier * comboMultiplier;
+        int totalBonusPercent = Mathf.RoundToInt(totalMultiplier * 100f);
+
+        int finalScore = Mathf.RoundToInt(baseScore * totalMultiplier);
+
         // 結果のログ出力＆処理
-        ProcessEvaluation(eval, baseScore, finalScore);
+        ProcessEvaluation(eval, baseScore, totalBonusPercent, finalScore);
         PlayExitAnimation(eval != CustomerEvaluation.Miss);
     }
 
     // 評価結果をログ出力し、GameManagerへ通知
-    private void ProcessEvaluation(CustomerEvaluation eval, int baseScore, int finalScore)
+    private void ProcessEvaluation(CustomerEvaluation eval, int baseScore, int bonusPercent, int finalScore)
     {
         if (showDebugLog)
         {
             string color = eval == CustomerEvaluation.Perfect ? "yellow" : (eval == CustomerEvaluation.Miss ? "red" : "green");
-            Debug.Log($"<color={color}>【提供評価】</color> 判定: {eval} | 基礎点: {baseScore} pt | 倍率補正後: {finalScore} pt | 我慢残量: {PatienceRatio * 100:F0}%");
+            Debug.Log($"<color={color}>【提供評価】</color> 判定: {eval} | 基礎点: {baseScore} pt | ボーナス率: {bonusPercent}% | 最終スコア: {finalScore} pt");
+        }
+
+        // 画面上のUIへ結果を通知してプレイヤーに見せる
+        if (UIManager.Instance != null)
+        {
+            UIManager.Instance.ShowEvaluationPopup(transform.position, eval, bonusPercent, finalScore);
         }
 
         // GameManagerへスコアと判定を通知
