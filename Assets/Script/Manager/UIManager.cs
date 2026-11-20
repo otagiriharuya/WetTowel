@@ -313,8 +313,6 @@ public class UIManager : MonoBehaviour
             float finalTime = GameManager.Instance.ElapsedTimeForTimeAttack;
             float bestTime = PlayerPrefs.GetFloat(saveKey, 9999f);
 
-            if (detailStatsText != null)
-                detailStatsText.text = $"目標スコア達成！\n素早いおしぼり提供お見事です！";
             if (finalScoreText != null)
                 finalScoreText.text = $"CLEAR TIME\n{finalTime:F2} 秒";
             if (highScoreText != null)
