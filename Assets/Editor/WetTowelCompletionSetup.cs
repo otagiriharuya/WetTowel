@@ -53,8 +53,8 @@ public static class WetTowelCompletionSetup
         }
 
         FixPrefabs(wetTowel, customer);
-        foreach (string scene in TitleScenes) SetupHowToPanel(scene, "TutorialPanel");
-        foreach (string scene in SelectScenes) SetupHowToPanel(scene, "RulePanel");
+        foreach (string scene in TitleScenes) SetupHowToPanel(scene, "TutorialPanel", HowToPlayPanel.PanelKind.Flow);
+        foreach (string scene in SelectScenes) SetupHowToPanel(scene, "RulePanel", HowToPlayPanel.PanelKind.Rules);
         foreach (string scene in GameScenes) SetupGameScene(scene, whiteSquare);
 
         AssetDatabase.SaveAssets();
@@ -142,7 +142,7 @@ public static class WetTowelCompletionSetup
 
     // ---- 「遊び方」「ルール」パネル ----
 
-    private static void SetupHowToPanel(string scenePath, string panelName)
+    private static void SetupHowToPanel(string scenePath, string panelName, HowToPlayPanel.PanelKind kind)
     {
         Scene scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
         // Steam向けはWindows版のみ。モバイル版シーンは触らない。
@@ -178,11 +178,19 @@ public static class WetTowelCompletionSetup
         // 既にセットアップ済みなら二重追加しない（再実行時の冪等性）。
         // ただし上の白パネル拡大などの修正は保存する（保存しないと
         // インメモリだけの変更になってビルドに反映されない）。
+        // ボタンの配置修正と表示内容の種類（Flow / Rules）の割り当ても
+        // 早期returnの前に毎回適用する。既存パネルはこの時点で
+        // HowToPlayPanelを持っているため、ここで直さないと反映されない。
         if (panel.GetComponent<HowToPlayPanel>() != null)
         {
+            FixHowToPanelButtons(panel, imgTr);
+            HowToPlayPanel existing = panel.GetComponent<HowToPlayPanel>();
+            SerializedObject existingSo = new SerializedObject(existing);
+            existingSo.FindProperty("kind").enumValueIndex = (int)kind;
+            existingSo.ApplyModifiedProperties();
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
-            Debug.Log($"[WetTowel] {scenePath}: {panelName} は既にセットアップ済みのためスキップします。");
+            Debug.Log($"[WetTowel] {scenePath}: {panelName} は既にセットアップ済みのためスキップします。（ボタン配置と表示内容 {kind} を適用）");
             return;
         }
 
@@ -209,17 +217,16 @@ public static class WetTowelCompletionSetup
 
         Font font = bodyText.font;
 
-        // ページ送りボタンとページ表示を作成
-        Button prev = CreateTextButton(panel.transform, "PrevPageButton", "◀ 前へ", font, new Color(0.85f, 0.85f, 0.85f));
-        Button next = CreateTextButton(panel.transform, "NextPageButton", "次へ ▶", font, new Color(0.85f, 0.85f, 0.85f));
-        Text pageLabel = CreateLabel(panel.transform, "PageLabel", "1 / 4", font);
+        // ページ送りボタンとページ表示は白パネル（Image）の子にする。
+        // 以前は全画面のTutorialPanel直下に置いていたため、画面の隅に
+        // 離れて置かれ、白パネルの外にはみ出していた。
+        // 白パネル内なら下部の左右・中央に固定サイズで収まる。
+        Transform buttonParent = imgTr != null ? imgTr : panel.transform;
+        Button prev = CreateTextButton(buttonParent, "PrevPageButton", "◀ 前へ", font, new Color(0.85f, 0.85f, 0.85f));
+        Button next = CreateTextButton(buttonParent, "NextPageButton", "次へ ▶", font, new Color(0.85f, 0.85f, 0.85f));
+        Text pageLabel = CreateLabel(buttonParent, "PageLabel", kind == HowToPlayPanel.PanelKind.Rules ? "1 / 4" : "1 / 3", font);
 
-        SetAnchored(prev.GetComponent<RectTransform>(), new Vector2(0f, 0f), new Vector2(0f, 0f),
-            new Vector2(96f, 40f), new Vector2(170, 60));
-        SetAnchored(next.GetComponent<RectTransform>(), new Vector2(1f, 0f), new Vector2(1f, 0f),
-            new Vector2(-96f, 40f), new Vector2(170, 60));
-        SetAnchored(pageLabel.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
-            new Vector2(0f, 40f), new Vector2(140, 50));
+        FixHowToPanelButtons(panel, imgTr);
 
         HowToPlayPanel howTo = panel.GetComponent<HowToPlayPanel>();
         if (howTo == null)
@@ -227,6 +234,7 @@ public static class WetTowelCompletionSetup
 
         // SerializedFieldへ割り当て
         SerializedObject so = new SerializedObject(howTo);
+        so.FindProperty("kind").enumValueIndex = (int)kind;
         so.FindProperty("bodyText").objectReferenceValue = bodyText;
         so.FindProperty("prevButton").objectReferenceValue = prev;
         so.FindProperty("nextButton").objectReferenceValue = next;
@@ -236,6 +244,59 @@ public static class WetTowelCompletionSetup
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene);
         Debug.Log($"[WetTowel] {scenePath}: {panelName} をページ式の遊び方パネルにしました。");
+    }
+
+    // ページ送りボタンとページ表示を白パネル内の固定サイズ・固定位置に直す。
+    // 原因: 以前はボタンが全画面（1920x1080）のTutorialPanel/RulePanel直下に
+    // 置かれていた。RectTransform自体は170x60の固定サイズだったが、
+    // 位置が画面の隅（x=96/-96, y=40）で白パネル（1500x1000）の外に
+    // はみ出し、画面幅いっぱいに離れて置かれたうえ、UISpriteの角丸が
+    // Simple描画で横に引き延ばされて楕円形に見えていた。
+    // 修正: 白パネル（Image）の子にし、白パネル下部の左右・中央に
+    // anchorMin==anchorMaxの固定アンカーで置く。サイズは文字に合った
+    // 120x48（ページ表示は120x40）にする。既存ボタンにも再実行時に適用する。
+    private static void FixHowToPanelButtons(GameObject panel, Transform imgTr)
+    {
+        if (imgTr == null)
+        {
+            Debug.LogWarning($"[WetTowel] {panel.name}: 白パネル（Image）が見つからないためボタン配置を直せません。");
+            return;
+        }
+        Transform prevTr = panel.transform.Find("PrevPageButton");
+        if (prevTr == null) prevTr = imgTr.Find("PrevPageButton");
+        Transform nextTr = panel.transform.Find("NextPageButton");
+        if (nextTr == null) nextTr = imgTr.Find("NextPageButton");
+        Transform labelTr = panel.transform.Find("PageLabel");
+        if (labelTr == null) labelTr = imgTr.Find("PageLabel");
+
+        if (prevTr != null)
+        {
+            prevTr.SetParent(imgTr, false);
+            SetAnchored(prevTr.GetComponent<RectTransform>(), new Vector2(0f, 0f), new Vector2(0f, 0f),
+                new Vector2(90f, 40f), new Vector2(120, 48));
+        }
+        if (nextTr != null)
+        {
+            nextTr.SetParent(imgTr, false);
+            SetAnchored(nextTr.GetComponent<RectTransform>(), new Vector2(1f, 0f), new Vector2(1f, 0f),
+                new Vector2(-90f, 40f), new Vector2(120, 48));
+        }
+        if (labelTr != null)
+        {
+            labelTr.SetParent(imgTr, false);
+            SetAnchored(labelTr.GetComponent<RectTransform>(), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
+                new Vector2(0f, 40f), new Vector2(120, 40));
+        }
+        // 角丸スプライトをSimple描画のまま横長にすると角まで引き延ばされるため、
+        // Sliced描画にして角の形を保つ。
+        foreach (Transform btnTr in new[] { prevTr, nextTr })
+        {
+            if (btnTr == null) continue;
+            Image img = btnTr.GetComponent<Image>();
+            if (img != null)
+                img.type = Image.Type.Sliced;
+        }
+        Debug.Log($"[WetTowel] {panel.name}: ページ送りボタンを白パネル内に固定サイズ（120x48）で配置しました。");
     }
 
     // ---- ゲーム画面 ----
