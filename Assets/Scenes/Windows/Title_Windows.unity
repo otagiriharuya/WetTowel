@@ -1692,7 +1692,7 @@ MonoBehaviour:
     m_BestFit: 0
     m_MinSize: 0
     m_MaxSize: 80
-    m_Alignment: 0
+    m_Alignment: 4
     m_AlignByGeometry: 0
     m_RichText: 1
     m_HorizontalOverflow: 0
@@ -2208,7 +2208,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "\u304A\u3057\u307C\u308A\u30DE\u30B9\u30BF\u30FC"
+  m_Text: "\u304A\u3057\u307C\u308A\u9053"
 --- !u!222 &2121936968
 CanvasRenderer:
   m_ObjectHideFlags: 0
