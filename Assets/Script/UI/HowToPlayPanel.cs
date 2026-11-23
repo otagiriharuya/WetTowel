@@ -13,6 +13,7 @@ public class HowToPlayPanel : MonoBehaviour
 
     [SerializeField] private PanelKind kind = PanelKind.Flow;
     [SerializeField] private Text bodyText; // 説明文を表示するText（既存のプレースホルダーText）
+    [SerializeField] private Text headingText; // 見出しを表示するText（各ページの1行目。中央寄せ）
     [SerializeField] private Button prevButton; // 「前へ」ボタン
     [SerializeField] private Button nextButton; // 「次へ」ボタン
     [SerializeField] private Text pageLabel; // 「1 / 3」などのページ表示
@@ -56,8 +57,30 @@ public class HowToPlayPanel : MonoBehaviour
     {
         _currentPage = Mathf.Clamp(pageIndex, 0, Pages.Length - 1);
 
-        if (bodyText != null)
-            bodyText.text = Pages[_currentPage];
+        // ページの1行目を見出し、残りを本文に分ける。
+        // 見出しは中央寄せ、本文は中央に置いたブロックの中で左揃えにする。
+        // headingText が未設定の場合は従来通り全文を bodyText に入れる。
+        string page = Pages[_currentPage];
+        if (headingText != null)
+        {
+            int split = page.IndexOf('\n');
+            if (split >= 0)
+            {
+                headingText.text = page.Substring(0, split);
+                if (bodyText != null)
+                    bodyText.text = page.Substring(split + 1);
+            }
+            else
+            {
+                headingText.text = page;
+                if (bodyText != null)
+                    bodyText.text = string.Empty;
+            }
+        }
+        else if (bodyText != null)
+        {
+            bodyText.text = page;
+        }
 
         if (pageLabel != null)
             pageLabel.text = $"{_currentPage + 1} / {Pages.Length}";
