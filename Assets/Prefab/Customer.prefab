@@ -511,6 +511,7 @@ MonoBehaviour:
   targetType: 2
   temperatureChangeRate: 15
   snapDuration: 0.15
+  steamRoot: {fileID: 0}
   showDebugLog: 1
 --- !u!114 &4664560552679822405
 MonoBehaviour:
@@ -532,6 +533,11 @@ MonoBehaviour:
   patienceBarImage: {fileID: 7482545467700558660}
   tempText: {fileID: 3151202452081607543}
   tempIconSprite: {fileID: 6365930860886145774}
+  bodyRenderer: {fileID: 8645553425462399842}
+  normalSprite: {fileID: 21300000, guid: 03c06421b34c924878d51a4fdd9852ed, type: 3}
+  happySprite: {fileID: 21300000, guid: b6a47593725129a7291e3c549887df86, type: 3}
+  angrySprite: {fileID: 21300000, guid: 042e13fb8be137bd2b5034721ea84490, type: 3}
+  sparkleSprite: {fileID: 21300000, guid: 71eafe84e3922cdd7a7f4c848d1247ff, type: 3}
   coldTempColor: {r: 0, g: 1, b: 1, a: 1}
   normalTempColor: {r: 1, g: 1, b: 1, a: 1}
   hotTempColor: {r: 1, g: 0, b: 0, a: 1}

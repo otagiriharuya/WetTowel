@@ -25,6 +25,12 @@ public class Customer : MonoBehaviour
     [SerializeField] private Text tempText; // 要求温度を表示するテキスト（例: "75℃" や "極熱"）
     [SerializeField] private Image tempIconSprite; // 要求温度の吹き出しやアイコンのスプライト
 
+    [SerializeField] private SpriteRenderer bodyRenderer; // 客の絵（MainUnit）
+    [SerializeField] private Sprite normalSprite; // 通常の表情
+    [SerializeField] private Sprite happySprite; // 笑顔
+    [SerializeField] private Sprite angrySprite; // 怒り顔
+    [SerializeField] private Sprite sparkleSprite; // PERFECT時のキラキラ
+
     [SerializeField] private Color coldTempColor = Color.cyan; // 極冷（0℃付近）
     [SerializeField] private Color normalTempColor = Color.white; // 常温（50℃付近）
     [SerializeField] private Color hotTempColor = Color.red; // 極熱（100℃付近）
@@ -51,6 +57,10 @@ public class Customer : MonoBehaviour
         _currentPatienceTime = maxPatienceTime;
         ApplyDifficultySettings(); // 難易度に応じた判定閾値の調整
         UpdatePatienceUI();
+        if (bodyRenderer == null)
+            bodyRenderer = GetComponentInChildren<SpriteRenderer>();
+        if (bodyRenderer != null && normalSprite != null)
+            bodyRenderer.sprite = normalSprite;
     }
 
     private void Update()
@@ -195,6 +205,7 @@ public class Customer : MonoBehaviour
         // 失敗作チェック（焦げ・カチコチ）
         if (wetTowel.CurrentState != WetTowelState.Normal)
         {
+            SetExpression(angrySprite);
             ProcessEvaluation(CustomerEvaluation.Miss, 0, 0, -200);
             PlayExitAnimation(false);
             return;
@@ -253,6 +264,7 @@ public class Customer : MonoBehaviour
         int finalScore = Mathf.RoundToInt(baseScore * totalMultiplier);
 
         // 結果のログ出力＆処理
+        SetExpression(eval == CustomerEvaluation.Miss ? angrySprite : happySprite);
         ProcessEvaluation(eval, baseScore, totalBonusPercent, finalScore);
         PlayExitAnimation(eval != CustomerEvaluation.Miss);
     }
@@ -260,6 +272,8 @@ public class Customer : MonoBehaviour
     // 評価結果をログ出力し、GameManagerへ通知
     private void ProcessEvaluation(CustomerEvaluation eval, int baseScore, int bonusPercent, int finalScore)
     {
+        if (eval == CustomerEvaluation.Perfect)
+            SpawnSparkles();
         if (showDebugLog)
         {
             string color = eval == CustomerEvaluation.Perfect ? "yellow" : (eval == CustomerEvaluation.Miss ? "red" : "green");
@@ -276,6 +290,34 @@ public class Customer : MonoBehaviour
         if (GameManager.Instance != null)
         {
             GameManager.Instance.AddScore(finalScore, eval);
+        }
+    }
+
+    // 表情を切り替える（見た目だけ。仕様は変えない）
+    private void SetExpression(Sprite sprite)
+    {
+        if (bodyRenderer != null && sprite != null)
+            bodyRenderer.sprite = sprite;
+    }
+
+    // PERFECT時のキラキラ演出（見た目だけ）
+    private void SpawnSparkles()
+    {
+        if (sparkleSprite == null) return;
+        for (int i = 0; i < 8; i++)
+        {
+            GameObject sparkle = new GameObject("Sparkle", typeof(SpriteRenderer));
+            sparkle.transform.position = transform.position + new Vector3(Random.Range(-0.8f, 0.8f), Random.Range(-0.5f, 1.0f), 0f);
+            SpriteRenderer sr = sparkle.GetComponent<SpriteRenderer>();
+            sr.sprite = sparkleSprite;
+            sr.sortingOrder = 10;
+            sparkle.transform.localScale = Vector3.zero;
+            Vector3 target = sparkle.transform.position + new Vector3(Random.Range(-0.5f, 0.5f), Random.Range(0.5f, 1.2f), 0f);
+            Sequence seq = DOTween.Sequence();
+            seq.Append(sparkle.transform.DOScale(Vector3.one * Random.Range(0.25f, 0.45f), 0.15f).SetEase(Ease.OutBack))
+               .Join(sparkle.transform.DOMove(target, 0.5f).SetEase(Ease.OutQuad))
+               .Append(sparkle.transform.DOScale(Vector3.zero, 0.2f).SetEase(Ease.InBack))
+               .OnComplete(() => Destroy(sparkle));
         }
     }
 
@@ -296,6 +338,7 @@ public class Customer : MonoBehaviour
             GameManager.Instance.ApplyAngerPenalty();
         }
 
+        SetExpression(angrySprite);
         PlayExitAnimation(false);
     }
 

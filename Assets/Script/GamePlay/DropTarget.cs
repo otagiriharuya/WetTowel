@@ -15,6 +15,7 @@ public class DropTarget : MonoBehaviour
     [SerializeField] private TargetType targetType = TargetType.WarmerSlot;
     [SerializeField] private float temperatureChangeRate = 10f; // 1秒あたりの温度変化量（＋または−）
     [SerializeField] private float snapDuration = 0.15f; // スナップにかかる時間
+    [SerializeField] private GameObject steamRoot; // 保温庫の湯気（おしぼりがセットされている時だけ表示）
 
     [SerializeField] private bool showDebugLog = true; // デバッグログの表示切り替え
 
@@ -36,6 +37,10 @@ public class DropTarget : MonoBehaviour
                 _mountedWetTowel.ChangeTemperature(-temperatureChangeRate * Time.deltaTime);
             }
         }
+
+        // 保温庫の湯気は、おしぼりがセットされている時だけ表示する
+        if (steamRoot != null)
+            steamRoot.SetActive(_mountedWetTowel != null && targetType == TargetType.WarmerSlot);
     }
 
     // おしぼりがドロップされた時の受け入れ判定
