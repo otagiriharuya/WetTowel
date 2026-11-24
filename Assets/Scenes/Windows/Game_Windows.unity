@@ -182,10 +182,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MachineUnlockManager
   unlockSettings:
   - thresholdScore: 4000
-    targetMachine: {fileID: 0}
+    targetMachine: {fileID: 1080038159}
     isUnlocked: 0
   - thresholdScore: 7000
-    targetMachine: {fileID: 0}
+    targetMachine: {fileID: 1002122587}
     isUnlocked: 0
   showDebugLog: 1
 --- !u!1 &3834373
@@ -3419,7 +3419,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1002122588
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3892,7 +3892,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1080038160
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4759,7 +4759,7 @@ SpriteRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: 7482667652216324306, guid: 311925a002f4447b3a28927169b83ea6, type: 3}
-  m_Color: {r: 0.97, g: 0.94, b: 0.85, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
