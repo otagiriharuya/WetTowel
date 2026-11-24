@@ -332,9 +332,9 @@ public class UIManager : MonoBehaviour
             {
                 detailStatsText.text =
                     $"PERFECT : {pCount} 人\n" +
-                    $"GREAT   : {gCount} 人\n" +
-                    $"GOOD    : {gdCount} 人\n" +
-                    $"MISS    : {mCount} 人\n" +
+                    $"GREAT     : {gCount} 人\n" +
+                    $"GOOD      : {gdCount} 人\n" +
+                    $"MISS        : {mCount} 人\n" +
                     $"COMBO   : {maxCombo} コンボ";
             }
 
