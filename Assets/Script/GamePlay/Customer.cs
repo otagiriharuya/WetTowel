@@ -31,6 +31,18 @@ public class Customer : MonoBehaviour
     [SerializeField] private Sprite angrySprite; // 怒り顔
     [SerializeField] private Sprite sparkleSprite; // PERFECT時のキラキラ
 
+    // 客の見た目バリエーション（見た目だけ。席・動き・仕様は変えない）
+    [System.Serializable]
+    public class CustomerLook
+    {
+        public Sprite normal;
+        public Sprite happy;
+        public Sprite angry;
+    }
+    [SerializeField] private CustomerLook[] looks;
+    public int LookIndex { get; private set; } = -1; // 今回の来店で選ばれた見た目
+    public int LookCount => looks != null ? looks.Length : 0;
+
     [SerializeField] private Color coldTempColor = Color.cyan; // 極冷（0℃付近）
     [SerializeField] private Color normalTempColor = Color.white; // 常温（50℃付近）
     [SerializeField] private Color hotTempColor = Color.red; // 極熱（100℃付近）
@@ -61,6 +73,18 @@ public class Customer : MonoBehaviour
             bodyRenderer = GetComponentInChildren<SpriteRenderer>();
         if (bodyRenderer != null && normalSprite != null)
             bodyRenderer.sprite = normalSprite;
+
+        // 見た目バリエーション：来店ごとにランダムで1パターンを選ぶ
+        if (looks != null && looks.Length > 0)
+        {
+            LookIndex = Random.Range(0, looks.Length);
+            CustomerLook look = looks[LookIndex];
+            if (look.normal != null) normalSprite = look.normal;
+            if (look.happy != null) happySprite = look.happy;
+            if (look.angry != null) angrySprite = look.angry;
+            if (bodyRenderer != null && normalSprite != null)
+                bodyRenderer.sprite = normalSprite;
+        }
     }
 
     private void Update()

@@ -538,6 +538,16 @@ MonoBehaviour:
   happySprite: {fileID: 21300000, guid: b6a47593725129a7291e3c549887df86, type: 3}
   angrySprite: {fileID: 21300000, guid: 042e13fb8be137bd2b5034721ea84490, type: 3}
   sparkleSprite: {fileID: 21300000, guid: 71eafe84e3922cdd7a7f4c848d1247ff, type: 3}
+  looks:
+  - normal: {fileID: 21300000, guid: 03c06421b34c924878d51a4fdd9852ed, type: 3}
+    happy: {fileID: 21300000, guid: b6a47593725129a7291e3c549887df86, type: 3}
+    angry: {fileID: 21300000, guid: 042e13fb8be137bd2b5034721ea84490, type: 3}
+  - normal: {fileID: 21300000, guid: ed00408bcb3cc44e1aff9c63f153872a, type: 3}
+    happy: {fileID: 21300000, guid: 4193a9e84326babb6b482699d771cc04, type: 3}
+    angry: {fileID: 21300000, guid: e73d2ea3db6a138bda27c71c0177fc2a, type: 3}
+  - normal: {fileID: 21300000, guid: 9e4d1cf17efab9ff693c1527e5546025, type: 3}
+    happy: {fileID: 21300000, guid: 2ce5e533abaf54ce898cc064a632f58e, type: 3}
+    angry: {fileID: 21300000, guid: b65b173457ec7b166acf60d9de67a4df, type: 3}
   coldTempColor: {r: 0, g: 1, b: 1, a: 1}
   normalTempColor: {r: 1, g: 1, b: 1, a: 1}
   hotTempColor: {r: 1, g: 0, b: 0, a: 1}
