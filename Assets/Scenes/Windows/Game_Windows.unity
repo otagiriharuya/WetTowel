@@ -3529,8 +3529,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "PERFECT :  \u4EBA\r\nGREAT     :  \u4EBA\r\nGOOD      :  \u4EBA\r\nMISS       
-    :  \u4EBA\r\nCOMBO   :  \u30B3\u30F3\u30DC"
+  m_Text: 
 --- !u!222 &866111705
 CanvasRenderer:
   m_ObjectHideFlags: 0

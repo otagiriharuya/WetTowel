@@ -6,16 +6,6 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-/// <summary>
-/// WetTowel完成作業のためのセットアップ用エディタツール。
-/// メニュー: WetTowel/Setup Completion
-/// - 新規スプライト3点のインポート設定（Sprite化）
-/// - 欠けていたスプライト参照の張り直し（Customer / WetTowel / Game画面の枠類）
-/// - タイトル/セレクト画面の「遊び方」「ルール」パネルをページ式にする
-/// - ゲーム画面に初回チュートリアル＋「？」ボタン＋操作ヒントバーを追加
-/// - ComboTextのtypo修正
-/// 既存のゲーム仕様・操作・レベル構成は変えない。
-/// </summary>
 public static class WetTowelCompletionSetup
 {
     private const string WhiteSquarePath = "Assets/Image/white_square.png";
