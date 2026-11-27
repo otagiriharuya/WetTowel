@@ -1,12 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// 「遊び方」/「ルール」パネルのページ送り表示。
-/// タイトル画面のTutorialPanel（Flow: ゲームの流れ）と
-/// セレクト画面のRulePanel（Rules: 各モードの説明）で使う。
-/// 文言は事実のみ、短く書く。仕様は変えない。
-/// </summary>
 public class HowToPlayPanel : MonoBehaviour
 {
     public enum PanelKind { Flow, Rules }

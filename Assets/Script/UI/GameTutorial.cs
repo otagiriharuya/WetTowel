@@ -27,7 +27,7 @@ public class GameTutorial : MonoBehaviour
     private int _currentStep;
     private bool _isShowing;
 
-    /// <summary>チュートリアル表示中かどうか。オーバーレイ自体は常時アクティブのため、activeSelfでは判定しない。</summary>
+    // チュートリアル表示中かどうか
     public bool IsShowing => _isShowing;
 
     private void Start()
@@ -39,9 +39,6 @@ public class GameTutorial : MonoBehaviour
         if (helpButton != null)
             helpButton.onClick.AddListener(ShowTutorial);
 
-        // 注意: panel がこのGameObject自身の場合、SetActive(false)で
-        // 自身が非アクティブになり、直後のコルーチンが停止して初回表示が出ない。
-        // そのため表示/非表示は SetPanelVisible() に集約する。
         SetPanelVisible(false);
 
         // 初回プレイ時のみチュートリアルを表示する
@@ -56,7 +53,7 @@ public class GameTutorial : MonoBehaviour
         ShowTutorial();
     }
 
-    /// <summary>チュートリアルを表示する（「？」ボタンからも呼ぶ）。</summary>
+    // チュートリアルを表示する（「？」ボタンからも呼ぶ）
     public void ShowTutorial()
     {
         // プレイ中でなければ開かない（結果画面などで時間を戻してしまわないため）
@@ -69,6 +66,7 @@ public class GameTutorial : MonoBehaviour
         Time.timeScale = 0f;
     }
 
+    // 指定したページを表示
     private void ShowStep(int stepIndex)
     {
         _currentStep = Mathf.Clamp(stepIndex, 0, Steps.Length - 1);
@@ -89,6 +87,7 @@ public class GameTutorial : MonoBehaviour
         }
     }
 
+    // 次へボタンが押されたときの処理
     private void OnNextButtonClicked()
     {
         if (_currentStep >= Steps.Length - 1)
@@ -99,14 +98,14 @@ public class GameTutorial : MonoBehaviour
         ShowStep(_currentStep + 1);
     }
 
-    /// <summary>チュートリアルを閉じてプレイを再開する。</summary>
+    // チュートリアルを閉じてプレイを再開
     public void FinishTutorial()
     {
         _isShowing = false;
 
         SetPanelVisible(false);
 
-        // プレイ中なら時間を再開する（結果画面で止まっている場合は触らない）
+        // プレイ中なら時間を再開する
         if (GameManager.Instance == null || GameManager.Instance.CurrentState == GameState.Playing)
             Time.timeScale = 1f;
 
@@ -114,11 +113,7 @@ public class GameTutorial : MonoBehaviour
         PlayerPrefs.Save();
     }
 
-    /// <summary>
-    /// パネルの表示/非表示。panel がこのGameObject自身の場合は
-    /// GameObjectを非アクティブにしない（コルーチン停止・FindObjectOfType失敗の原因になるため）。
-    /// 代わりに暗転Imageと子オブジェクト（TutorialBox）だけを切り替える。
-    /// </summary>
+    // パネルの表示・非表示の切替
     private void SetPanelVisible(bool visible)
     {
         if (panel == null)
