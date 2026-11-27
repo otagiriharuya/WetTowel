@@ -47,6 +47,7 @@ public class DraggableItem : MonoBehaviour, IPointerDownHandler, IBeginDragHandl
             return;
 
         KillActiveSequence(); // 実行中のアニメーションを停止
+        AudioManager.Instance?.PlayPickup();
 
         _startPosition = transform.position; // 初期位置を記憶
 

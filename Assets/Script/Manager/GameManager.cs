@@ -166,6 +166,9 @@ public class GameManager : MonoBehaviour
         _playTimer = 0f;
         _currentState = GameState.Playing;
 
+        // モード・難易度に合わせたゲーム BGM を流す
+        AudioManager.Instance?.PlayGameBgm(_currentMode, _currentDifficulty);
+
         // モードに応じた初期時間のセット
         if (_currentMode == "TIME ATTACK")
         {
@@ -208,17 +211,21 @@ public class GameManager : MonoBehaviour
             case CustomerEvaluation.Perfect:
                 _perfectCount++;
                 _comboCount++;
+                AudioManager.Instance?.PlayPerfect();
                 break;
             case CustomerEvaluation.Great:
                 _greatCount++;
                 _comboCount++;
+                AudioManager.Instance?.PlayGreat();
                 break;
             case CustomerEvaluation.Good:
                 _goodCount++;
                 _comboCount = 0; // Goodではコンボ途切れる仕様、または維持にしたい場合は調整可能
+                AudioManager.Instance?.PlayGood();
                 break;
             case CustomerEvaluation.Miss:
                 _comboCount = 0;
+                AudioManager.Instance?.PlayMiss();
                 _missCount++;
                 _standardMissCount++;
                 OnMissChanged?.Invoke(_missCount);
@@ -293,6 +300,7 @@ public class GameManager : MonoBehaviour
         _missCount++;
         _standardMissCount++;
         OnMissChanged?.Invoke(_missCount);
+        AudioManager.Instance?.PlayMiss();
 
         if (_currentMode == "ENDLESS" && _missCount >= 3)
         {
@@ -311,6 +319,12 @@ public class GameManager : MonoBehaviour
     {
         _currentState = isClear ? GameState.GameClear : GameState.GameOver;
         OnStateChanged?.Invoke(_currentState);
+        if (isClear)
+            AudioManager.Instance?.PlayClear();
+        else
+            AudioManager.Instance?.PlayGameOver();
+        // リザルト画面の BGM（全モード・難易度共通）に切り替える
+        AudioManager.Instance?.PlayResultBgm();
         Time.timeScale = 0.0f;
 
         // モード別のハイスコアキー生成

@@ -47,9 +47,9 @@ public class HowToPlayPanel : MonoBehaviour
     private void Start()
     {
         if (prevButton != null)
-            prevButton.onClick.AddListener(() => ShowPage(_currentPage - 1));
+            prevButton.onClick.AddListener(() => { AudioManager.Instance?.PlayClick(); ShowPage(_currentPage - 1); });
         if (nextButton != null)
-            nextButton.onClick.AddListener(() => ShowPage(_currentPage + 1));
+            nextButton.onClick.AddListener(() => { AudioManager.Instance?.PlayClick(); ShowPage(_currentPage + 1); });
         ShowPage(_currentPage);
     }
 

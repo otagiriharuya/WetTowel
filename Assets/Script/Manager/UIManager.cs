@@ -421,6 +421,7 @@ public class UIManager : MonoBehaviour
         DOTween.KillAll(); // アニメーション等のキル
 
         Time.timeScale = 1.0f; // ポーズ解除（時間の流れを戻す）
+        AudioManager.Instance?.PlayStart();
 
         if (showDebugLog)
             Debug.Log("<color=yellow>【リトライ】</color> シーンを再読み込みします。");
@@ -435,6 +436,7 @@ public class UIManager : MonoBehaviour
     {
         DOTween.KillAll();
         Time.timeScale = 1.0f;
+        AudioManager.Instance?.PlayClick();
         if (sceneNavigator != null)
         {
             sceneNavigator.LoadTitleScene();

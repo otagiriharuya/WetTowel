@@ -17,6 +17,9 @@ public class TitleManager : MonoBehaviour
 
     private void Start()
     {
+        // タイトル画面の BGM を流す
+        AudioManager.Instance?.PlayTitleBgm();
+
         // チュートリアルパネルは非表示
         if (tutorialPanel != null)
         {
@@ -63,6 +66,8 @@ public class TitleManager : MonoBehaviour
             startButton.transform.DOPunchScale(Vector3.one * 0.1f, 0.15f, 10, 1f);
         }
 
+        AudioManager.Instance?.PlayStart();
+
         if (sceneNavigator != null)
         {
             // セレクトシーンへ遷移（セレクトを挟まない場合は直接 LoadGameScene() でも可）
@@ -72,6 +77,7 @@ public class TitleManager : MonoBehaviour
 
     private void OnTutorialButtonClicked()
     {
+        AudioManager.Instance?.PlayClick();
         if (tutorialPanel != null)
         {
             tutorialPanel.SetActive(true);
@@ -88,6 +94,7 @@ public class TitleManager : MonoBehaviour
 
     private void OnExitButtonClicked()
     {
+        AudioManager.Instance?.PlayClick();
         if (exitButton != null)
         {
             exitButton.transform.DOPunchScale(Vector3.one * 0.1f, 0.15f, 10, 1f);
@@ -105,6 +112,7 @@ public class TitleManager : MonoBehaviour
 
     private void OnCloseTutorialButtonClicked()
     {
+        AudioManager.Instance?.PlayClick();
         if (tutorialPanel != null)
         {
             CanvasGroup cg = tutorialPanel.GetComponent<CanvasGroup>();

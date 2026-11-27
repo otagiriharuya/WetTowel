@@ -62,6 +62,9 @@ public class SelectManager : MonoBehaviour
         if (closeRuleButton != null)
             closeRuleButton.onClick.AddListener(ToggleRulePanel);
 
+        // セレクト画面の BGM を流す
+        AudioManager.Instance?.PlaySelectBgm();
+
         // 初期UIの反映
         UpdateUI();
 
@@ -79,6 +82,7 @@ public class SelectManager : MonoBehaviour
             _currentDiffIndex = 0;
 
         UpdateUI();
+        AudioManager.Instance?.PlayClick();
 
         // 変更時の演出
         if (difficultyText != null)
@@ -102,6 +106,7 @@ public class SelectManager : MonoBehaviour
             _currentModeIndex = 0;
 
         UpdateUI();
+        AudioManager.Instance?.PlayClick();
 
         if (modeText != null)
         {
@@ -154,6 +159,8 @@ public class SelectManager : MonoBehaviour
         if (rulePanel == null)
             return;
 
+        AudioManager.Instance?.PlayClick();
+
         bool isActive = !rulePanel.activeSelf;
         rulePanel.SetActive(isActive);
 
@@ -190,6 +197,8 @@ public class SelectManager : MonoBehaviour
         PlayerPrefs.SetString("SelectedMode", finalMode);
         PlayerPrefs.Save();
 
+        AudioManager.Instance?.PlayStart();
+
         if (startButton != null)
         {
             startButton.transform.DOPunchScale(Vector3.one * 0.1f, 0.15f, 10, 1f);
@@ -204,6 +213,7 @@ public class SelectManager : MonoBehaviour
     // ミニゲームボタン（未実装用）
     private void OnMiniGameButtonClicked()
     {
+        AudioManager.Instance?.PlayClick();
         if (showDebugLog)
             Debug.Log("<color=orange>【ミニゲーム】</color> ミニゲームは現在未実装です。今後のアップデートをお楽しみに！");
 
@@ -217,6 +227,7 @@ public class SelectManager : MonoBehaviour
     // タイトルへ戻るボタン
     private void OnBackButtonClicked()
     {
+        AudioManager.Instance?.PlayClick();
         if (sceneNavigator != null)
         {
             sceneNavigator.LoadTitleScene();

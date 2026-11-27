@@ -57,6 +57,7 @@ public class MachineUnlockManager : MonoBehaviour
         if (setting.targetMachine != null)
         {
             setting.targetMachine.SetActive(true);
+            AudioManager.Instance?.PlayUnlock();
 
             // 登場演出（DOTweenで小さくポップアップさせる）
             Transform targetTransform = setting.targetMachine.transform;
